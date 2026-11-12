@@ -22,14 +22,14 @@ function renderDiary(){const all=state.entries.filter(x=>x.date===state.date);co
 $('#dateLabel').textContent=state.date===today()?'Today · '+dateObject(state.date).toLocaleDateString('en-IE',{day:'numeric',month:'short'}):dateObject(state.date).toLocaleDateString('en-IE',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 $('#calConsumed').textContent=fmt(sum.kcal);$('#calTarget').textContent=fmt(state.prefs.kcal);$('#calRemaining').textContent=fmt(Math.abs(remain));$('#balanceLabel').textContent=remain>=0?'kcal remaining':'kcal above target';$('#calRing').style.setProperty('--progress',Math.min(100,100*sum.kcal/state.prefs.kcal)+'%');$('#entryCount').textContent=all.length+' '+(all.length===1?'entry':'entries');
 $('#macroGrid').innerHTML=[['protein','Protein'],['carbs','Carbs'],['fat','Fat']].map(([key,title])=>`<div class="macro"><div class="row">${title}<span>g</span></div><div class="value">${fmt(sum[key])}<small> / ${fmt(state.prefs[key])}</small></div><div class="bar"><span style="width:${Math.max(0,Math.min(100,sum[key]/state.prefs[key]*100))}%"></span></div></div>`).join('');
-$('#mealGroups').innerHTML=meals.map(meal=>{const list=all.filter(e=>e.meal===meal),val=totals(list);return `<section class="meal"><div class="meal-head"><div><strong>${meal}</strong><div class="sub">${fmt(val.kcal)} kcal · ${fmt(val.protein)}g protein</div></div><button data-add-meal="${meal}">+ Add</button></div>${list.length?list.map(e=>`<div class="entry"><div><div class="food-name">${esc(e.name)}</div><div class="sub">${fmt(e.qty)} × ${esc(e.portion)} · ${fmt(e.protein)}g protein</div></div><div class="numbers"><strong>${fmt(e.kcal)} kcal</strong><span class="sub">${fmt(e.carbs)}g carbs</span></div><button class="delete" aria-label="Delete ${esc(e.name)}" data-delete-entry="${esc(e.id)}">×</button></div>`).join(''):'<div class="empty-meal">Nothing logged yet</div>'}</section>`;}).join('');
+$('#mealGroups').innerHTML=meals.map(meal=>{const list=all.filter(e=>e.meal===meal),val=totals(list);return `<section class="meal"><div class="meal-head"><div><strong>${meal}</strong><div class="sub">${fmt(val.kcal)} kcal · ${fmt(val.protein)}g protein</div></div><button data-add-meal="${meal}">+ Add</button></div>${list.length?list.map(e=>`<div class="entry"><div><div class="food-name">${esc(e.name)}</div><div class="sub">${fmt(e.qty)} × ${esc(e.portion)} · ${fmt(e.protein)}g protein ${e.origin==='google-sheets'?'· ☁ ChatGPT':''}</div></div><div class="numbers"><strong>${fmt(e.kcal)} kcal</strong><span class="sub">${fmt(e.carbs)}g carbs</span></div><button class="delete" aria-label="Delete ${esc(e.name)}" data-delete-entry="${esc(e.id)}" ${e.origin==='google-sheets'?'disabled title="Edit this entry via ChatGPT"':''}>×</button></div>`).join(''):'<div class="empty-meal">Nothing logged yet</div>'}</section>`;}).join('');
 }
 function renderPicker(){const options=state.foods.map(f=>`<option value="${esc(f.id)}">${esc(f.name)} · ${esc(f.portion)}</option>`).join('');const el=$('#foodPicker'),old=el.value;el.innerHTML=options;if(state.foods.some(f=>f.id===old))el.value=old;const food=state.foods.find(f=>f.id===el.value);const qty=Number($('#foodQty').value)||1;$('#pickerNutrition').textContent=food?`${fmt(nutrition(food,qty).kcal)} kcal · ${fmt(nutrition(food,qty).protein)} g protein per ${fmt(qty)} serving(s)`:'Add your first saved food to continue.';}
-function renderFoods(){$('#foodCount').textContent=state.foods.length+' saved';$('#foodList').innerHTML=state.foods.map(f=>`<div class="food-card"><div><b>${esc(f.name)}</b><small>${fmt(f.kcal)} kcal · ${fmt(f.protein)}g protein · ${esc(f.portion)} ${f.source==='illustrative'?'· starter estimate':''}</small></div><button data-delete-food="${esc(f.id)}" aria-label="Delete food">Delete</button></div>`).join('')||'<p class="helper">No foods yet. Add one above.</p>';}
+function renderFoods(){$('#foodCount').textContent=state.foods.length+' saved';$('#foodList').innerHTML=state.foods.map(f=>`<div class="food-card"><div><b>${esc(f.name)}</b><small>${fmt(f.kcal)} kcal · ${fmt(f.protein)}g protein · ${esc(f.portion)} ${f.source==='illustrative'?'· starter estimate':''}</small></div><button data-delete-food="${esc(f.id)}" ${f.origin==='google-sheets'?'disabled title="Edit this food via ChatGPT"':''} aria-label="Delete food">Delete</button></div>`).join('')||'<p class="helper">No foods yet. Add one above.</p>';}
 function renderSettings(){for(const key of ['kcal','protein','carbs','fat']){$('#target'+key[0].toUpperCase()+key.slice(1)).value=state.prefs[key];}}
 function renderParsed(){const root=$('#parseResults');if(state.parsed.length===0){root.innerHTML='';return;}const unknown=state.parsed.filter(x=>!x.matched);const known=state.parsed.filter(x=>x.matched);
 root.innerHTML='<div class="section-title"><h2>Review before logging</h2></div>'+(unknown.length?`<div class="alert">Couldn't identify ${unknown.map(x=>'“'+esc(x.raw)+'”').join(', ')}. Add those as saved foods first. Extras such as cooking oil, butter, sauces or milk should be logged separately.</div>`:'')+known.map((x,i)=>{const f=state.foods.find(f=>f.id===x.foodId),nutritionVals=f?nutrition(f,x.qty):null;return `<div class="result"><b>${esc(x.foodName)}</b><div class="result-row"><span>${f?esc(f.portion):''} · ${nutritionVals?fmt(nutritionVals.kcal):0} kcal</span><label>Servings <input class="control" type="number" min="0.1" max="1000" step="0.1" data-quantity="${i}" value="${x.qty}"></label></div></div>`;}).join('')+(known.length?'<button class="primary" id="saveParsed">Save matched foods to diary</button>':'');}
-async function addFoodEntry(food,qty,meal){const info=nutrition(food,qty);const entry={id:uid(),date:state.date,meal,name:food.name,portion:food.portion,qty,...info,createdAt:new Date().toISOString()};await op('entries','put',entry);return entry;}
+async function addFoodEntry(food,qty,meal){const info=nutrition(food,qty);const entry={id:uid(),date:state.date,meal,name:food.name,portion:food.portion,qty,...info,createdAt:new Date().toISOString(),origin:'local'};await op('entries','put',entry);return entry;}
 async function addFromPicker(){const f=state.foods.find(x=>x.id===$('#foodPicker').value),qty=Number($('#foodQty').value);if(!f||!Number.isFinite(qty)||qty<=0||qty>1000)return toast('Choose a food and a valid serving amount.');await addFoodEntry(f,qty,$('#pickerMeal').value);await reload();render();toast('Food added to '+state.date+'.');}
 async function addParsed(){let added=0;const meal=$('#quickMeal').value;for(const candidate of state.parsed){if(!candidate.matched)continue;const food=state.foods.find(f=>f.id===candidate.foodId);if(food){await addFoodEntry(food,candidate.qty,meal);added++;}}if(!added)return toast('No recognised foods to add.');state.parsed=[];$('#quickText').value='';await reload();nav('today');toast(`${added} food${added===1?'':'s'} added. Check your totals.`);}
 function validateNumber(n){return Number.isFinite(n)&&n>=0&&n<=1000000;}
@@ -45,17 +45,61 @@ await reload();render();toast('Local backup restored.');}
 function attach(){ $$('.bottom-nav button').forEach(el=>el.addEventListener('click',()=>nav(el.dataset.screen)));
 $('#prevDate').addEventListener('click',()=>{const d=dateObject(state.date);d.setDate(d.getDate()-1);state.date=dayString(d);render();});
 $('#nextDate').addEventListener('click',()=>{const d=dateObject(state.date);d.setDate(d.getDate()+1);state.date=dayString(d);render();});
-$('#mealGroups').addEventListener('click',async e=>{const add=e.target.closest('[data-add-meal]');if(add){$('#quickMeal').value=add.dataset.addMeal;$('#pickerMeal').value=add.dataset.addMeal;nav('add');return;}const del=e.target.closest('[data-delete-entry]');if(del&&confirm('Remove this food entry?')){await op('entries','delete',del.dataset.deleteEntry);await reload();render();toast('Entry removed.');}});
+$('#mealGroups').addEventListener('click',async e=>{const add=e.target.closest('[data-add-meal]');if(add){$('#quickMeal').value=add.dataset.addMeal;$('#pickerMeal').value=add.dataset.addMeal;nav('add');return;}const del=e.target.closest('[data-delete-entry]');if(del&&state.entries.some(x=>x.id===del.dataset.deleteEntry&&x.origin==='google-sheets'))return toast('Ask ChatGPT to delete this saved Google Sheets entry.');if(del&&confirm('Remove this food entry?')){await op('entries','delete',del.dataset.deleteEntry);await reload();render();toast('Entry removed.');}});
 $('#parseBtn').addEventListener('click',()=>{state.parsed=parseText($('#quickText').value,state.foods);renderParsed();if(!state.parsed.length)toast('Describe the food you ate first.');});
 $('#parseResults').addEventListener('change',e=>{const el=e.target.closest('[data-quantity]');if(!el)return;const matches=state.parsed.filter(x=>x.matched);const target=matches[Number(el.dataset.quantity)];const qty=Number(el.value);if(target&&qty>0&&qty<=1000){target.qty=qty;const results=$('#parseResults');const focus=el.dataset.quantity;const caret=document.activeElement===el;renderParsed();if(caret){const next=results.querySelector(`[data-quantity="${focus}"]`);next?.focus();}}});
 $('#parseResults').addEventListener('click',e=>{if(e.target.id==='saveParsed')addParsed().catch(showError);});
 $('#foodPicker').addEventListener('change',renderPicker);$('#foodQty').addEventListener('input',renderPicker);$('#addSelected').addEventListener('click',()=>addFromPicker().catch(showError));
 $('#foodForm').addEventListener('submit',e=>createFood(e).catch(showError));
-$('#foodList').addEventListener('click',async e=>{const del=e.target.closest('[data-delete-food]');if(!del)return;const food=state.foods.find(f=>f.id===del.dataset.deleteFood);if(food&&confirm(`Delete “${food.name}” from the saved food library? Existing diary records will remain.`)){await op('foods','delete',food.id);await reload();render();toast('Saved food removed.');}});
+$('#foodList').addEventListener('click',async e=>{const del=e.target.closest('[data-delete-food]');if(!del)return;const food=state.foods.find(f=>f.id===del.dataset.deleteFood);if(food?.origin==='google-sheets')return toast('Ask ChatGPT to delete this cloud food.');if(food&&confirm(`Delete “${food.name}” from the saved food library? Existing diary records will remain.`)){await op('foods','delete',food.id);await reload();render();toast('Saved food removed.');}});
 $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const next={id:'settings'};for(const k of ['kcal','protein','carbs','fat']){const v=Number($('#target'+k[0].toUpperCase()+k.slice(1)).value);if(!Number.isFinite(v)||v<=0||v>50000)return toast('Enter valid positive targets.');next[k]=v;}await op('prefs','put',next);await reload();render();toast('Targets updated.');});
 $('#exportBtn').addEventListener('click',exportBackup);$('#importInput').addEventListener('change',async e=>{try{await restoreBackup(e.target.files[0]);}catch(err){showError(err)}finally{e.target.value='';}});
 }
+
+// Read-only Google Sheets importer: remote rows are cached, never uploaded to Sheets.
+async function applyRemoteSnapshot({entries,foods}){
+ if(!Array.isArray(entries)||!Array.isArray(foods)||entries.length>10000||foods.length>5000)throw Error('Invalid remote data');
+ const entryIds=new Set(),foodIds=new Set();
+ for(const e of entries){
+   if(!e.id||entryIds.has(e.id)||!e.date||!meals.includes(e.meal)||!['kcal','protein','carbs','fat'].every(k=>validateNumber(Number(e[k]))))throw Error('Invalid or duplicated cloud entry');
+   entryIds.add(e.id);
+ }
+ for(const f of foods){
+   if(!f.id||foodIds.has(f.id)||!f.name||!f.portion||!['kcal','protein','carbs','fat'].every(k=>validateNumber(Number(f[k]))))throw Error('Invalid or duplicated cloud food');
+   foodIds.add(f.id);
+ }
+ let entriesSaved=0,foodsSaved=0,conflicts=0;
+ await new Promise((resolve,reject)=>{
+   const tx=db.transaction(['entries','foods'],'readwrite');
+   const es=tx.objectStore('entries'),fs=tx.objectStore('foods');
+   const er=es.getAll(),fr=fs.getAll();
+   let previousEntries=null,previousFoods=null;
+   function merge(){
+     if(!previousEntries||!previousFoods)return;
+     const oldE=new Map(previousEntries.map(x=>[x.id,x])),oldF=new Map(previousFoods.map(x=>[x.id,x]));
+     for(const e of previousEntries)if(e.origin==='google-sheets'&&!entryIds.has(e.id))es.delete(e.id);
+     for(const f of previousFoods)if(f.origin==='google-sheets'&&!foodIds.has(f.id))fs.delete(f.id);
+     for(const e of entries){
+       if(oldE.has(e.id)&&oldE.get(e.id).origin!=='google-sheets'){conflicts++;continue}
+       es.put({...e,origin:'google-sheets'});entriesSaved++;
+     }
+     for(const f of foods){
+       if(oldF.has(f.id)&&oldF.get(f.id).origin!=='google-sheets'){conflicts++;continue}
+       fs.put({...f,origin:'google-sheets'});foodsSaved++;
+     }
+   }
+   er.onsuccess=()=>{previousEntries=er.result;merge()};
+   fr.onsuccess=()=>{previousFoods=fr.result;merge()};
+   tx.oncomplete=()=>resolve();
+   tx.onerror=()=>reject(tx.error||Error('Local sync failed'));
+   tx.onabort=()=>reject(tx.error||Error('Local sync aborted'));
+ });
+ await reload();render();
+ return {entries:entriesSaved,foods:foodsSaved,conflicts};
+}
+window.FuelLabBridge={ready:false,applyRemoteSnapshot};
+
 function showError(err){console.error('Fuel Lab:',err);toast('Could not save that change. Check device storage and try again.');}
-async function init(){try{db=await openDb();await firstRun();attach();render();if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(console.warn);}catch(e){console.error(e);$('#app').innerHTML='<main style="padding:45px 20px"><h1>Local storage unavailable</h1><p>Fuel Lab could not open its local diary. Try opening it from its HTTPS web address in Safari rather than a local file or private browsing window.</p><p>No information was uploaded.</p></main>';}}
+async function init(){try{db=await openDb();await firstRun();attach();render();window.FuelLabBridge.ready=true;window.dispatchEvent(new Event('fuel-lab-ready'));if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(console.warn);}catch(e){console.error(e);$('#app').innerHTML='<main style="padding:45px 20px"><h1>Local storage unavailable</h1><p>Fuel Lab could not open its local diary. Try opening it from its HTTPS web address in Safari rather than a local file or private browsing window.</p><p>No information was uploaded.</p></main>';}}
 init();
 })();
