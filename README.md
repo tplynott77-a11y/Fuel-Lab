@@ -15,7 +15,7 @@ An experimental, account-free, local-first personal food diary designed for iPho
 
 ## Installation on iPhone
 
-1. This repository is currently **private**. GitHub Pages usually requires a public repository on GitHub Free. If you choose GitHub Pages hosting, change the repository visibility to Public under **Settings → General → Danger Zone**, or use another host that supports private sites. The **app code** can be public; your private food diary is not included in this repository.
+1. The repository is **public** for GitHub Pages. That means the app's source code is visible, but **your private food diary is not included in this repository**.
 2. In GitHub **Settings → Pages**, select **Deploy from a branch**, `main`, `/ (root)`, and save.
 3. Once live, visit the GitHub Pages HTTPS URL in **Safari** on your iPhone.
 4. Choose **Share → Add to Home Screen**, enable **Open as Web App** when available, and tap Add.
