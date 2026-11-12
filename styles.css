@@ -11,3 +11,19 @@
 .sync-state.problem{color:#f5d3bd;background:#32271f;border-color:#76533c}
 .sync-chat-link{display:inline-block;color:var(--mint);font-size:13px;font-weight:750;margin-top:18px;text-decoration:none}
 .cloud-lock{color:#9ce0bb;display:inline-flex;align-items:center;padding:5px;font-size:16px}
+
+
+/* v0.3 Apple Health daily activity and conservative calorie credit */
+.health-card{border-color:#345a56;background:linear-gradient(135deg,#192e31,#13212d);margin-bottom:21px;padding:18px}
+.health-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.health-head h2{margin:6px 0 0;font-size:19px;letter-spacing:-.35px}
+.health-source{font-size:10px;color:#a0cabc;white-space:nowrap;text-align:right}
+.health-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:17px 0}
+.health-numbers>div{background:rgba(8,17,28,.45);border:1px solid #2d4149;border-radius:11px;padding:12px 10px;min-width:0}
+.health-numbers small{display:block;font-size:10px;color:#a0bdb7;margin-bottom:8px;line-height:1.4}
+.health-numbers strong{display:block;font-size:17px;color:#d2f2df;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.health-note{font-size:12px;color:#a8bab7;line-height:1.5;margin:9px 0 0}
+.activity-settings{display:flex;flex-direction:column;gap:9px;margin:15px 0}
+.activity-settings label{font-size:13px;font-weight:700;color:#dcece4}
+.activity-settings .small-note{margin:2px 0 12px}
+@media(max-width:500px){.health-numbers{grid-template-columns:1fr 1fr}.health-numbers>div:last-child{grid-column:1/-1}.health-head{align-items:start}.health-source{max-width:130px;white-space:normal}.health-card{padding:14px}}
