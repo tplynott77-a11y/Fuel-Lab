@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0b121d" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Fuel Lab" />
+<meta name="description" content="A personal, offline-first food and nutrition diary. Your entries stay on your device." />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="styles.css" />
+<title>Fuel Lab — Local Nutrition Diary</title>
+</head>
+<body>
+<div id="app">
+  <header class="top"><div class="brand"><span class="logo">F<span>✦</span></span><div><b>FUEL LAB</b><small>PERSONAL NUTRITION JOURNAL</small></div></div><div class="offline-pill"><span class="status-dot"></span> ON THIS DEVICE</div></header>
+  <main>
+    <section class="screen" id="screen-today">
+      <div class="welcome"><div class="eyebrow">TODAY'S FUEL</div><h1>Build better days.</h1><p>A simple record of what you eat. Your food, your numbers, your control.</p></div>
+      <div class="date-nav"><button class="circle-button" id="prevDate" aria-label="Previous day">‹</button><div class="date-label" id="dateLabel">Today</div><button class="circle-button" id="nextDate" aria-label="Next day">›</button></div>
+      <div class="hero card"><div class="cal-ring" id="calRing"><div class="cal-center"><strong id="calConsumed">0</strong><span>of <b id="calTarget">2470</b> kcal</span></div></div><div class="cal-aside"><div class="eyebrow">DAILY BALANCE</div><div class="remaining" id="calRemaining">2,470</div><p id="balanceLabel">kcal remaining</p><div class="tiny">Based on the targets you set. Estimates are not exact measurements.</div></div></div>
+      <div class="macro-grid" id="macroGrid"></div>
+      <div class="section-title"><h2>Your food diary</h2><span id="entryCount">0 entries</span></div>
+      <div id="mealGroups"></div>
+      <p class="disclaimer">Numbers are estimates. Oils, sauces, serving sizes and preparation methods can change the actual nutrition.</p>
+    </section>
+    <section class="screen hidden" id="screen-add">
+      <div class="eyebrow">QUICK ENTRY</div><h1>Tell me what you ate.</h1><p class="helper">Try “3 eggs and a bagel” or “150g cooked chicken breast”. This first version uses an offline food matcher, not an AI model. You review everything before saving.</p>
+      <div class="card form-card"><label for="quickText">Describe your meal</label><textarea id="quickText" rows="4" placeholder="3 eggs and 1 bagel"></textarea><div class="flex"><label class="inline-label" for="quickMeal">Meal</label><select id="quickMeal" class="control"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option></select></div><button class="primary" id="parseBtn">Review food matches →</button></div>
+      <div id="parseResults"></div>
+      <div class="section-title"><h2>Or choose a saved food</h2></div><div class="card form-card"><label for="foodPicker">Food</label><select id="foodPicker" class="control"></select><div class="flex"><div><label for="foodQty">Servings</label><input id="foodQty" class="control" type="number" min="0.1" max="1000" step="0.1" value="1" /></div><div><label for="pickerMeal">Meal</label><select id="pickerMeal" class="control"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option></select></div></div><div id="pickerNutrition" class="small-note"></div><button class="secondary" id="addSelected">Add food to diary</button></div>
+    </section>
+    <section class="screen hidden" id="screen-foods">
+      <div class="eyebrow">PERSONAL LIBRARY</div><h1>Your saved foods.</h1><p class="helper">The starter foods use illustrative nutrition estimates. Replace them with exact label values when available.</p>
+      <div class="card form-card"><h2>Save a food</h2><form id="foodForm"><label for="newName">Name</label><input class="control" id="newName" required maxlength="90" placeholder="My chicken wrap" /><label for="newPortion">Serving unit</label><input class="control" id="newPortion" required maxlength="50" placeholder="wrap / 100 g / bowl" /><div class="two-col"><div><label for="newKcal">Calories</label><input class="control" id="newKcal" type="number" required min="0" step="0.1" /></div><div><label for="newProtein">Protein (g)</label><input class="control" id="newProtein" type="number" required min="0" step="0.1" /></div><div><label for="newCarbs">Carbs (g)</label><input class="control" id="newCarbs" type="number" required min="0" step="0.1" /></div><div><label for="newFat">Fat (g)</label><input class="control" id="newFat" type="number" required min="0" step="0.1" /></div></div><button type="submit" class="primary">Save to food library</button></form></div>
+      <div class="section-title"><h2>Food library</h2><span id="foodCount"></span></div>
+      <div id="foodList"></div>
+    </section>
+    <section class="screen hidden" id="screen-settings">
+      <div class="eyebrow">YOUR CONTROL PANEL</div><h1>Settings & backup.</h1><p class="helper">No account, no tracking scripts and no data sent to a server by this prototype.</p>
+      <div class="card form-card"><h2>Daily targets</h2><form id="settingsForm"><div class="two-col"><div><label for="targetKcal">Calories</label><input id="targetKcal" type="number" min="1" required class="control" /></div><div><label for="targetProtein">Protein (g)</label><input id="targetProtein" type="number" min="1" required class="control" /></div><div><label for="targetCarbs">Carbs (g)</label><input id="targetCarbs" type="number" min="1" required class="control" /></div><div><label for="targetFat">Fat (g)</label><input id="targetFat" type="number" min="1" required class="control" /></div></div><button type="submit" class="secondary">Save targets</button></form></div>
+      <div class="card form-card"><h2>Your data stays yours</h2><p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser storage can be erased if the app or its website data is removed.</p><button class="secondary" id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup file</label><input id="importInput" type="file" accept="application/json,.json" hidden /></div>
+      <div class="card quiet"><h3>About this prototype</h3><p>This is an offline-first nutrition diary with simple text matching. Real AI photo analysis, cloud nutrition lookup and Apple Health are future upgrades. It will never silently treat an AI guess as a verified food value.</p><p class="version">FUEL LAB / V0.1 · PERSONAL PROTOTYPE</p></div>
+    </section>
+  </main>
+  <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+<script src="food-core.js"></script><script src="app.js"></script>
+</body></html>
