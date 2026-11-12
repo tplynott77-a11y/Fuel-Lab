@@ -46,8 +46,16 @@ function food(cell){
  if([kcal,protein,carbs,fat].some(x=>x===null))return null;
  return {id,name,portion,kcal,protein,carbs,fat,aliases:String(cell('Aliases')||'').split('|').map(x=>x.trim()).filter(Boolean).slice(0,20),accuracy:String(cell('Accuracy')||'Estimated').slice(0,30),source:String(cell('Source')||'ChatGPT'),origin:'google-sheets'};
 }
+function activity(cell){
+ const id=String(cell('Record ID')||'').trim(),date=String(cell('Date')||'').trim(),kind=String(cell('Kind')||'').trim();
+ if(!id||id.length>150||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!['Daily Active','Workout'].includes(kind))return null;
+ const kcal=num(cell('Active kcal')),minutes=num(cell('Exercise minutes'));
+ if(kcal===null)return null;
+ return {id,date,kind,name:String(cell('Activity')||'Activity').slice(0,100),activeKcal:kcal,exerciseMinutes:minutes,
+ durationMinutes:num(cell('Duration minutes')),updatedAt:String(cell('Updated at')||''),source:String(cell('Source')||'Apple Health').slice(0,100),origin:'google-sheets'};
+}
 async function getTab(sheet,tab){
- const range="'"+tab.replace(/'/g,"''")+"'!A1:O";
+ const range="'"+tab.replace(/'/g,"''")+"'!A1:"+(tab==='Activity'?'L':'O');
  const url='https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(sheet)+'/values/'+encodeURIComponent(range)+'?valueRenderOption=FORMATTED_VALUE';
  const response=await fetch(url,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
  if(!response.ok){
@@ -64,13 +72,15 @@ async function refresh(force=false){
  if(busy||(!force&&Date.now()-lastFetch<60000))return;
  busy=true;status('Reading the latest ChatGPT entries…');
  try{
-   const [log,library]=await Promise.all([getTab(sheet,'Diary'),getTab(sheet,'Saved Foods')]);
+   const [log,library,activityRows]=await Promise.all([getTab(sheet,'Diary'),getTab(sheet,'Saved Foods'),getTab(sheet,'Activity')]);
    const meals=table(log,['Entry ID','Date','Meal','Food','Servings','Calories','Protein (g)','Carbs (g)','Fat (g)','Status'],diary);
    const foods=table(library,['Food ID','Name','Serving unit','Calories','Protein (g)','Carbs (g)','Fat (g)','Status'],food);
+   const activityData=table(activityRows,['Record ID','Date','Kind','Active kcal','Status'],activity);
    const result=await window.FuelLabBridge.applyRemoteSnapshot({entries:meals.items,foods:foods.items});
+   const activityResult=await window.FuelLabBridge.applyActivitySnapshot(activityData.items);
    localStorage.setItem(STAMP_KEY,JSON.stringify({when:new Date().toISOString(),entries:result.entries,foods:result.foods}));
    lastFetch=Date.now();
-   status('Up to date · '+result.entries+' chat entries · '+result.foods+' saved foods'+(meals.skipped+foods.skipped?' · '+(meals.skipped+foods.skipped)+' incomplete rows skipped':'')+(result.conflicts?' · '+result.conflicts+' local IDs protected':''));
+   status('Up to date · '+result.entries+' chat entries · '+result.foods+' saved foods · '+activityResult.count+' activity records'+(meals.skipped+foods.skipped+activityData.skipped?' · '+(meals.skipped+foods.skipped+activityData.skipped)+' incomplete rows skipped':'')+(result.conflicts?' · '+result.conflicts+' local IDs protected':''));
  }catch(e){console.warn('Fuel Lab sync:',e);status('Sync failed: '+(e?.message||'Unknown error')+' Your local diary remains intact.',true)}
  finally{busy=false}
 }
