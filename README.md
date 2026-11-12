@@ -30,3 +30,7 @@ The PWA is hosted with GitHub Pages. Its local quick-entry parser is still rule-
 
 ## Files
 index.html, app.js, sync.js, food-core.js, styles.css, sw.js, manifest.webmanifest, icons/.
+
+## iPhone IndexedDB reconnection (v0.2.3)
+
+Some iOS Safari sessions close the IndexedDB connection after returning from another app or completing Google OAuth. Fuel Lab now reopens a stale connection and retries the atomic local transaction. It **does not delete or reset** your existing local diary. The service worker cache version has been raised so the newer code can load. Reload the site once after GitHub Pages deploys; from then on return-to-app sync will retry closed connections automatically. If a future sync fails, do not clear Safari website data or delete the Home Screen app; export a JSON backup first and then retry.
