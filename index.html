@@ -23,6 +23,16 @@
       <div class="date-nav"><button class="circle-button" id="prevDate" aria-label="Previous day">‹</button><div class="date-label" id="dateLabel">Today</div><button class="circle-button" id="nextDate" aria-label="Next day">›</button></div>
       <div class="hero card"><div class="cal-ring" id="calRing"><div class="cal-center"><strong id="calConsumed">0</strong><span>of <b id="calTarget">2470</b> kcal</span></div></div><div class="cal-aside"><div class="eyebrow">DAILY BALANCE</div><div class="remaining" id="calRemaining">2,470</div><p id="balanceLabel">kcal remaining</p><div class="tiny">Based on the targets you set. Estimates are not exact measurements.</div></div></div>
       <div class="macro-grid" id="macroGrid"></div>
+
+      <section class="card health-card" aria-labelledby="healthTitle">
+        <div class="health-head"><div><div class="eyebrow">APPLE HEALTH</div><h2 id="healthTitle">Today's activity</h2></div><span id="activitySource" class="health-source">Awaiting Shortcut</span></div>
+        <div class="health-numbers">
+          <div><small>Move / active energy</small><strong id="activityKcal">—</strong></div>
+          <div><small>Exercise minutes</small><strong id="activityMinutes">—</strong></div>
+          <div><small>Calorie target adjustment</small><strong id="activityCredit">Not configured</strong></div>
+        </div>
+        <p class="health-note" id="activityNote">Active calories include workouts and everyday movement, so they are not automatically added to your base target.</p>
+      </section>
       <div class="section-title"><h2>Your food diary</h2><span id="entryCount">0 entries</span></div>
       <div id="mealGroups"></div>
       <p class="disclaimer">Numbers are estimates. Oils, sauces, serving sizes and preparation methods can change the actual nutrition.</p>
@@ -55,9 +65,15 @@
         <p class="small-note">Automatic on return, when internet reconnects and every two minutes while open—as long as Google sign-in is still active. You may occasionally need to reconnect after a token expires. This app cannot sync while fully closed on iPhone.</p>
         <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" class="sync-chat-link">Open ChatGPT to log a meal ↗</a>
       </div>
-      <div class="card form-card"><h2>Daily targets</h2><form id="settingsForm"><div class="two-col"><div><label for="targetKcal">Calories</label><input id="targetKcal" type="number" min="1" required class="control" /></div><div><label for="targetProtein">Protein (g)</label><input id="targetProtein" type="number" min="1" required class="control" /></div><div><label for="targetCarbs">Carbs (g)</label><input id="targetCarbs" type="number" min="1" required class="control" /></div><div><label for="targetFat">Fat (g)</label><input id="targetFat" type="number" min="1" required class="control" /></div></div><button type="submit" class="secondary">Save targets</button></form></div>
+      <div class="card form-card"><h2>Daily targets & activity credit</h2><form id="settingsForm"><div class="two-col"><div><label for="targetKcal">Calories</label><input id="targetKcal" type="number" min="1" required class="control" /></div><div><label for="targetProtein">Protein (g)</label><input id="targetProtein" type="number" min="1" required class="control" /></div><div><label for="targetCarbs">Carbs (g)</label><input id="targetCarbs" type="number" min="1" required class="control" /></div><div><label for="targetFat">Fat (g)</label><input id="targetFat" type="number" min="1" required class="control" /></div></div><div class="activity-settings">
+<label for="activityBaseline">Normal-day active calories already covered by your base goal (kcal)</label>
+<input id="activityBaseline" class="control" type="number" min="0" max="20000" step="10" placeholder="Leave empty to disable exercise credit" />
+<label for="activityCreditPct">Credit for active calories above that baseline (%)</label>
+<input id="activityCreditPct" class="control" type="number" min="0" max="100" step="5" value="70" />
+<p class="small-note">Apple Health's Move calories include both exercise and ordinary movement. Leaving the baseline blank keeps your 2,470 kcal goal unchanged while still showing activity data. Do not add workout calories twice.</p>
+</div><button type="submit" class="secondary">Save targets</button></form></div>
       <div class="card form-card"><h2>Your data stays yours</h2><p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser storage can be erased if the app or its website data is removed.</p><button class="secondary" id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup file</label><input id="importInput" type="file" accept="application/json,.json" hidden /></div>
-      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.2 · CHATGPT-CONNECTED</p></div>
+      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.3 · APPLE HEALTH SHORTCUTS READY</p></div>
     </section>
   </main>
   <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
