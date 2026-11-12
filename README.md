@@ -1,4 +1,4 @@
-# Fuel Lab — ChatGPT-connected nutrition dashboard (v0.2)
+# Fuel Lab — ChatGPT and Apple Health connected dashboard (v0.3)
 
 A personal iPhone app powered by ChatGPT conversations and a private Google Sheet. No extra OpenAI API billing.
 
@@ -9,6 +9,17 @@ A personal iPhone app powered by ChatGPT conversations and a private Google Shee
 4. Fuel Lab will refresh automatically when you return to it, reconnect to the internet, or every two minutes while visible and authorised. **Refresh now** is available too.
 
 **Limitations:** Google browser OAuth tokens expire; the app does not persist tokens. When the app is terminated or a token expires, tap **Connect Google** again. iOS doesn't permit reliable periodic background sync when the app is closed.
+
+## Apple Health integration (v0.3)
+
+- **Activity** tab added to the same private Google Sheet as Diary, Saved Foods, Recipes and Settings.
+- Apple Health daily active kcal and optional Exercise Minutes are imported by an iPhone Shortcut into the private sheet, then refreshed automatically in Fuel Lab through the existing read-only Google login.
+- An offline activity card shows Move/active energy and exercise minutes for the selected day.
+- The exercise-credit calculation is **off until you enter a normal-day activity baseline** in Fuel Lab Settings, preventing accidental addition of your entire Move ring on top of the 2,470 kcal base.
+- **[Set up Apple Health Shortcut and private receiver](apple-health/SETUP.md)**.
+- **[Google Apps Script receiver](apple-health/Code.gs)**: Token-protected write-only daily summaries, no private token included in GitHub.
+
+**Important:** A browser-based PWA cannot directly access Apple Health. You must deploy the private Google Apps Script web app under your own Google account and create/authorise the Shortcut on your iPhone. The code and dashboard are ready, but Health data will not appear until that setup is completed.
 
 ## Data flow and privacy
 - **ChatGPT → private Google Sheet → Fuel Lab**. ChatGPT writes via connected Drive tools; the website only reads.
