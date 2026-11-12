@@ -1,37 +1,32 @@
-# Fuel Lab 🥗
+# Fuel Lab — ChatGPT-connected nutrition dashboard (v0.2)
 
-An experimental, account-free, local-first personal food diary designed for iPhone. The app runs as an installable progressive web app (PWA) and keeps the diary in **IndexedDB on the device**.
+A personal iPhone app powered by ChatGPT conversations and a private Google Sheet. No extra OpenAI API billing.
 
-## Current features (v0.1)
+## Setup
+1. Open https://tplynott77-a11y.github.io/Fuel-Lab/ in Safari or via its Home Screen icon.
+2. In **Settings → ChatGPT → Fuel Lab**, paste the private Fuel Lab Google Sheet link supplied in your ChatGPT conversation.
+3. Tap **Connect Google**, sign in with the Google account that owns the Sheet, and grant read-only access.
+4. Fuel Lab will refresh automatically when you return to it, reconnect to the internet, or every two minutes while visible and authorised. **Refresh now** is available too.
 
-- Daily calorie and macro dashboard (default 2,470 kcal/day, adjustable in Settings)
-- Breakfast / lunch / dinner / snack diary
-- A small illustrative starter food database and custom saved foods
-- Simple offline text parser such as `3 eggs and a bagel`
-- Local JSON export/import backups
-- Home Screen app manifest, icons and offline service worker
+**Limitations:** Google browser OAuth tokens expire; the app does not persist tokens. When the app is terminated or a token expires, tap **Connect Google** again. iOS doesn't permit reliable periodic background sync when the app is closed.
 
-**Important:** This is not yet AI-powered; it uses a limited rule-based food matcher. Starter nutrition estimates are illustrative, not verified label data. Confirm everything before saving.
+## Data flow and privacy
+- **ChatGPT → private Google Sheet → Fuel Lab**. ChatGPT writes via connected Drive tools; the website only reads.
+- The app caches cloud records in local IndexedDB for offline viewing. Local-only entries remain on your phone and are not uploaded.
+- No private diary data, Google Sheet ID, access token, or Google client secret is committed to GitHub. A public OAuth Client ID is not a secret.
+- Cloud entries are displayed read-only. To update or delete one, ask ChatGPT to amend the same Google Sheet row; set Status to Deleted if needed.
+- Existing local entries are preserved; stable IDs prevent duplication. Export backups regularly.
 
-## Installation on iPhone
+## Google Sheet schema
+- **Diary:** Entry ID, Date (YYYY-MM-DD Irish local), Meal, Food, Servings, Serving unit, Calories, Protein (g), Carbs (g), Fat (g), Accuracy, Source, Notes, Recorded at, Status. Nutrition values are **totals for the entry**.
+- **Saved Foods:** Food ID, Name, Serving unit, Calories, Protein (g), Carbs (g), Fat (g), Aliases, Accuracy, Source, Notes, Status. Nutrition is **per saved serving**.
+- **Recipes:** Stores ingredients and per-serving values; not yet a separate page in the app.
+- **Settings:** Baseline target 2470 kcal, protein 160g, carbs 270g, fat 80g. On-phone targets remain locally editable and aren't overwritten by Sheets.
 
-1. The repository is **public** for GitHub Pages. That means the app's source code is visible, but **your private food diary is not included in this repository**.
-2. In GitHub **Settings → Pages**, select **Deploy from a branch**, `main`, `/ (root)`, and save.
-3. Once live, visit the GitHub Pages HTTPS URL in **Safari** on your iPhone.
-4. Choose **Share → Add to Home Screen**, enable **Open as Web App** when available, and tap Add.
-5. Open Fuel Lab once online to cache the app for offline use.
+## Logging with ChatGPT
+Tell ChatGPT: “Log that dinner in Fuel Lab.” If the food is approximate, it should label Accuracy as Estimated and record assumptions. When you correct a meal, ChatGPT should update its existing Entry ID instead of appending a duplicate.
 
-## Privacy and backups
+The PWA is hosted with GitHub Pages. Its local quick-entry parser is still rule-based; actual AI interpretation takes place in ChatGPT.
 
-The app uses no trackers, analytics or server-side database. Entries and saved foods stay in the browser's IndexedDB, and data is not sent to GitHub. Everyone opening a public copy receives their *own empty local diary*. Export your diary regularly under **Settings → Export backup** and save it in iCloud Drive, since clearing browser storage or deleting the web app can erase data.
-
-## Next upgrades
-
-- Genuine AI food interpretation / photo recognition, with user confirmation
-- Barcode and food-database lookup for verified nutrition
-- Recipe builder and frequently used meals
-- Optional Apple Health integration
-
-A secure AI provider cannot be called with a secret API key embedded in public browser JavaScript. It would need a protected proxy, or a later native on-device Swift implementation.
-
-The source files in this repository are editable; there is no build step.
+## Files
+index.html, app.js, sync.js, food-core.js, styles.css, sw.js, manifest.webmanifest, icons/.
