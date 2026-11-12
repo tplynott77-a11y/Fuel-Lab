@@ -11,8 +11,65 @@ const uid=()=>window.crypto?.randomUUID?.()||'local-'+Date.now().toString(36)+'-
 let db;
 let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[]};
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3600);}
-function openDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open('fuel-lab-private-v1',1);req.onupgradeneeded=()=>{const d=req.result;for(const store of ['foods','entries','prefs'])if(!d.objectStoreNames.contains(store))d.createObjectStore(store,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);req.onblocked=()=>reject(Error('Please close any other Fuel Lab tabs and try again.'));});}
-function op(store,type,arg){return new Promise((resolve,reject)=>{const txn=db.transaction(store,type==='getAll'?'readonly':'readwrite');const obj=txn.objectStore(store);let req;if(type==='getAll')req=obj.getAll();else if(type==='put')req=obj.put(arg);else if(type==='delete')req=obj.delete(arg);else if(type==='get')req=obj.get(arg);else if(type==='clear')req=obj.clear();req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);txn.onerror=()=>reject(txn.error);});}
+// iOS Safari can close IndexedDB connections while a PWA is backgrounded.
+// Reopen a stale connection before reading/writing; do not delete or reset the database.
+let openPromise=null;
+function openDb(){return new Promise((resolve,reject)=>{
+ const req=indexedDB.open('fuel-lab-private-v1',1);
+ req.onupgradeneeded=()=>{const d=req.result;for(const store of ['foods','entries','prefs'])if(!d.objectStoreNames.contains(store))d.createObjectStore(store,{keyPath:'id'});};
+ req.onsuccess=()=>{
+   const connection=req.result;
+   connection.onclose=()=>{if(db===connection)db=null;};
+   connection.onversionchange=()=>{connection.close();if(db===connection)db=null;};
+   resolve(connection);
+ };
+ req.onerror=()=>reject(req.error||Error('Cannot open local food diary'));
+ req.onblocked=()=>reject(Error('Please close any other Fuel Lab tabs and try again.'));
+});}
+async function ensureDb(){
+ if(db)return db;
+ if(!openPromise)openPromise=openDb().then(connection=>{db=connection;return connection;}).finally(()=>{openPromise=null;});
+ return openPromise;
+}
+function isClosedConnection(err){
+ return err?.name==='InvalidStateError'||/database connection is clos(?:ed|ing)|connection.*clos(?:ed|ing)|database is clos(?:ed|ing)/i.test(String(err?.message||''));
+}
+async function transact(stores,mode,enqueue){
+ for(let attempt=0;attempt<3;attempt++){
+  const connection=await ensureDb();
+  try{
+   return await new Promise((resolve,reject)=>{
+    let tx;
+    try{tx=connection.transaction(stores,mode);}catch(e){reject(e);return;}
+    let value;
+    const setResult=result=>{value=result;};
+    tx.oncomplete=()=>resolve(value);
+    tx.onabort=()=>reject(tx.error||Error('Local database transaction aborted'));
+    tx.onerror=()=>reject(tx.error||Error('Local database transaction failed'));
+    try{enqueue(tx,setResult);}
+    catch(e){try{tx.abort();}catch(_){}reject(e);}
+   });
+  }catch(e){
+   if(attempt===2||!isClosedConnection(e))throw e;
+   // The old connection has become unusable. Keep all existing stores and records.
+   if(db===connection)db=null;
+   await new Promise(resolve=>setTimeout(resolve,60*(attempt+1)));
+  }
+ }
+}
+function op(store,type,arg){
+ return transact(store,type==='getAll'||type==='get'?'readonly':'readwrite',(tx,setResult)=>{
+  const obj=tx.objectStore(store);
+  let req;
+  if(type==='getAll')req=obj.getAll();
+  else if(type==='put')req=obj.put(arg);
+  else if(type==='delete')req=obj.delete(arg);
+  else if(type==='get')req=obj.get(arg);
+  else if(type==='clear')req=obj.clear();
+  else throw Error('Unsupported local database operation');
+  req.onsuccess=()=>setResult(req.result);
+ });
+}
 async function reload(){const [foods,entries,prefs]=await Promise.all([op('foods','getAll'),op('entries','getAll'),op('prefs','get','settings')]);state.foods=foods.sort((a,b)=>a.name.localeCompare(b.name));state.entries=entries;state.prefs=prefs||state.prefs;}
 async function firstRun(){const seeded=await op('prefs','get','starter-seeded');if(!seeded){for(const food of starterFoods)await op('foods','put',food);await op('prefs','put',state.prefs);await op('prefs','put',{id:'starter-seeded',done:true});}await reload();}
 const meals=['Breakfast','Lunch','Dinner','Snacks'];
@@ -40,7 +97,7 @@ if(data.kind!=='fuel-lab-backup'||data.version!==1||!Array.isArray(data.entries)
 if(data.entries.some(x=>!x.id||!x.date||!meals.includes(x.meal)||!['kcal','protein','carbs','fat'].every(k=>validateNumber(Number(x[k]))))||data.foods.some(x=>!x.id||!x.name||!x.portion||!['kcal','protein','carbs','fat'].every(k=>validateNumber(Number(x[k])))))return toast('Backup contains invalid diary or food values.');
 if(!confirm(`Replace the current local diary with ${data.entries.length} imported entries and ${data.foods.length} foods? Export a backup first if you want to keep the current data.`))return;
 // Single transaction: either all three stores restore, or none of them do.
-await new Promise((resolve,reject)=>{const txn=db.transaction(['foods','entries','prefs'],'readwrite');for(const name of ['foods','entries'])txn.objectStore(name).clear();txn.objectStore('prefs').clear();for(const food of data.foods)txn.objectStore('foods').put(food);for(const item of data.entries)txn.objectStore('entries').put(item);txn.objectStore('prefs').put({...data.prefs,id:'settings'});txn.objectStore('prefs').put({id:'starter-seeded',done:true});txn.oncomplete=resolve;txn.onerror=()=>reject(txn.error);txn.onabort=()=>reject(txn.error);});
+await transact(['foods','entries','prefs'],'readwrite',txn=>{for(const name of ['foods','entries'])txn.objectStore(name).clear();txn.objectStore('prefs').clear();for(const food of data.foods)txn.objectStore('foods').put(food);for(const item of data.entries)txn.objectStore('entries').put(item);txn.objectStore('prefs').put({...data.prefs,id:'settings'});txn.objectStore('prefs').put({id:'starter-seeded',done:true});});
 await reload();render();toast('Local backup restored.');}
 function attach(){ $$('.bottom-nav button').forEach(el=>el.addEventListener('click',()=>nav(el.dataset.screen)));
 $('#prevDate').addEventListener('click',()=>{const d=dateObject(state.date);d.setDate(d.getDate()-1);state.date=dayString(d);render();});
@@ -69,14 +126,16 @@ async function applyRemoteSnapshot({entries,foods}){
    foodIds.add(f.id);
  }
  let entriesSaved=0,foodsSaved=0,conflicts=0;
- await new Promise((resolve,reject)=>{
-   const tx=db.transaction(['entries','foods'],'readwrite');
+ await transact(['entries','foods'],'readwrite',tx=>{
+   entriesSaved=0;foodsSaved=0;conflicts=0;
    const es=tx.objectStore('entries'),fs=tx.objectStore('foods');
    const er=es.getAll(),fr=fs.getAll();
-   let previousEntries=null,previousFoods=null;
+   let previousEntries=null,previousFoods=null,merged=false;
    function merge(){
-     if(!previousEntries||!previousFoods)return;
+     if(merged||!previousEntries||!previousFoods)return;
+     merged=true;
      const oldE=new Map(previousEntries.map(x=>[x.id,x])),oldF=new Map(previousFoods.map(x=>[x.id,x]));
+     // Only remove previously synced cloud entries that the master Sheet no longer contains.
      for(const e of previousEntries)if(e.origin==='google-sheets'&&!entryIds.has(e.id))es.delete(e.id);
      for(const f of previousFoods)if(f.origin==='google-sheets'&&!foodIds.has(f.id))fs.delete(f.id);
      for(const e of entries){
@@ -88,11 +147,8 @@ async function applyRemoteSnapshot({entries,foods}){
        fs.put({...f,origin:'google-sheets'});foodsSaved++;
      }
    }
-   er.onsuccess=()=>{previousEntries=er.result;merge()};
-   fr.onsuccess=()=>{previousFoods=fr.result;merge()};
-   tx.oncomplete=()=>resolve();
-   tx.onerror=()=>reject(tx.error||Error('Local sync failed'));
-   tx.onabort=()=>reject(tx.error||Error('Local sync aborted'));
+   er.onsuccess=()=>{previousEntries=er.result;merge();};
+   fr.onsuccess=()=>{previousFoods=fr.result;merge();};
  });
  await reload();render();
  return {entries:entriesSaved,foods:foodsSaved,conflicts};
@@ -100,6 +156,6 @@ async function applyRemoteSnapshot({entries,foods}){
 window.FuelLabBridge={ready:false,applyRemoteSnapshot};
 
 function showError(err){console.error('Fuel Lab:',err);toast('Could not save that change. Check device storage and try again.');}
-async function init(){try{db=await openDb();await firstRun();attach();render();window.FuelLabBridge.ready=true;window.dispatchEvent(new Event('fuel-lab-ready'));if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(console.warn);}catch(e){console.error(e);$('#app').innerHTML='<main style="padding:45px 20px"><h1>Local storage unavailable</h1><p>Fuel Lab could not open its local diary. Try opening it from its HTTPS web address in Safari rather than a local file or private browsing window.</p><p>No information was uploaded.</p></main>';}}
+async function init(){try{await ensureDb();await firstRun();attach();render();window.FuelLabBridge.ready=true;window.dispatchEvent(new Event('fuel-lab-ready'));if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(console.warn);}catch(e){console.error(e);$('#app').innerHTML='<main style="padding:45px 20px"><h1>Local storage unavailable</h1><p>Fuel Lab could not open its local diary. Try opening it from its HTTPS web address in Safari rather than a local file or private browsing window.</p><p>No information was uploaded.</p></main>';}}
 init();
 })();
