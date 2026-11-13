@@ -4,11 +4,13 @@
 'use strict';
 const CLIENT='568556229750-ap39oagpjs6gu432tfghgupujfukdooq.apps.googleusercontent.com';
 const SCOPE='https://www.googleapis.com/auth/spreadsheets.readonly';
-const SHEET_KEY='fuel-lab-google-sheet-id-v1',STAMP_KEY='fuel-lab-google-last-sync-v1';
+const SHEET_KEY='fuel-lab-google-sheet-id-v1',STAMP_KEY='fuel-lab-google-last-sync-v1',TRAINING_KEY='fuel-lab-training-sheet-id-v1';
 const $=s=>document.querySelector(s);
 let token=null,expires=0,busy=false,lastFetch=0,oauth=null,booted=false;
 const saved=()=>{try{return localStorage.getItem(SHEET_KEY)||''}catch(e){return ''}};
 const prior=()=>{try{return JSON.parse(localStorage.getItem(STAMP_KEY)||'null')}catch(e){return null}};
+const savedTraining=()=>{try{return localStorage.getItem(TRAINING_KEY)||'';}catch(e){return '';}};
+function trainingStatus(msg,error=false){const el=$('#trainingStatus');if(el){el.textContent=msg;el.classList.toggle('problem',error);}}
 const num=v=>{if(v===null||v===undefined||v==='')return null;let n=Number(String(v).replace(/,/g,'').trim());return Number.isFinite(n)&&n>=0&&n<=1000000?n:null};
 const idFrom=v=>{let s=String(v||'').trim(),m=s.match(/\/spreadsheets\/d\/([A-Za-z0-9_-]{15,120})/);if(m)s=m[1];return /^[A-Za-z0-9_-]{15,120}$/.test(s)?s:null};
 const validToken=()=>!!token&&Date.now()<expires-45000;
@@ -60,8 +62,43 @@ function weighIn(cell){
  return {id,date,kg,context:String(cell('Time / context')||'').slice(0,100),
   source:String(cell('Source')||'ChatGPT').slice(0,100),notes:String(cell('Notes')||'').slice(0,350),origin:'google-sheets'};
 }
+/* Optional read-only training tracker import. Missing or invalid tabs never block food sync. */
+function trainingTable(rows,required,convert){
+ const [head,...data]=rows;
+ if(!Array.isArray(head)||required.some(h=>!head.includes(h)))throw Error('Training tracker columns do not match the expected layout');
+ let items=[],skipped=0;
+ for(let i=0;i<data.length;i++){
+  const row=data[i];if(!row||!String(row[head.indexOf(required[0])]||'').trim())continue;
+  const cell=k=>row[head.indexOf(k)];
+  const item=convert(cell,i+2);
+  if(item)items.push(item);else skipped++;
+ }
+ return {items,skipped};
+}
+const validDate=d=>/^\d{4}-\d{2}-\d{2}$/.test(d);
+const safeText=(value,max=200)=>String(value||'').slice(0,max);
+function swimRecord(cell,row){
+ const date=safeText(cell('Date')).trim(),distanceM=num(cell('Distance (m)'));
+ if(!validDate(date)||distanceM===null||distanceM<=0||distanceM>100000)return null;
+ return {id:'swim-row-'+row,date,setting:safeText(cell('Setting'),100),type:safeText(cell('Session type'),120),
+   distanceM,durationMin:num(cell('Duration (min)')),avgHr:num(cell('Avg HR (bpm)')),
+   activeKcal:num(cell('Watch active kcal')),notes:safeText(cell('Session notes'),500)};
+}
+function gymRecord(cell,row){
+ const date=safeText(cell('Date')).trim(),session=safeText(cell('Session'),120).trim();
+ if(!validDate(date)||!session)return null;
+ return {id:'gym-row-'+row,date,session,warmupKm:num(cell('Warm-up (km)')),workingSets:num(cell('Working sets')),
+   durationMin:num(cell('Approx. gym time (min)')),effort:safeText(cell('Session effort'),100)};
+}
+function strengthRecord(cell,row){
+ const date=safeText(cell('Date')).trim(),exercise=safeText(cell('Exercise'),120).trim();
+ if(!validDate(date)||!exercise)return null;
+ return {id:'strength-row-'+row,date,exercise,loadKg:num(cell('Load (kg)')),
+   loadBasis:safeText(cell('Load basis'),60),reps:num(cell('Total reps'))};
+}
 async function getTab(sheet,tab){
- const range="'"+tab.replace(/'/g,"''")+"'!A1:"+(tab==='Activity'?'L':tab==='Weight Log'?'G':'O');
+ const bounds={'Activity':'L','Weight Log':'G','Swim Log':'L','Gym Sessions':'H','Strength Log':'M'};
+ const range="'"+tab.replace(/'/g,"''")+"'!A1:"+(bounds[tab]||'O');
  const url='https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(sheet)+'/values/'+encodeURIComponent(range)+'?valueRenderOption=FORMATTED_VALUE';
  const response=await fetch(url,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
  if(!response.ok){
@@ -86,6 +123,23 @@ async function refresh(force=false){
    const result=await window.FuelLabBridge.applyRemoteSnapshot({entries:meals.items,foods:foods.items});
    const activityResult=await window.FuelLabBridge.applyActivitySnapshot(activityData.items);
    const weightResult=await window.FuelLabBridge.applyWeightsSnapshot(weightData.items);
+   const tracker=idFrom($('#trainingSheetId')?.value||savedTraining());
+   if(tracker){
+    trainingStatus('Reading your swim and gym tracker…');
+    try{
+      const [swimRows,gymRows,strengthRows]=await Promise.all([
+        getTab(tracker,'Swim Log'),getTab(tracker,'Gym Sessions'),getTab(tracker,'Strength Log')
+      ]);
+      const swims=trainingTable(swimRows,['Date','Distance (m)'],swimRecord);
+      const gyms=trainingTable(gymRows,['Date','Session'],gymRecord);
+      const strength=trainingTable(strengthRows,['Date','Exercise'],strengthRecord);
+      const training=await window.FuelLabBridge.applyTrainingSnapshot({swims:swims.items,gyms:gyms.items,strength:strength.items});
+      trainingStatus('Up to date · '+training.swims+' swims · '+training.gyms+' gym sessions · '+training.strength+' strength records');
+    }catch(trainingError){
+      console.warn('Fuel Lab training sync:',trainingError);
+      trainingStatus('Training sync failed: '+(trainingError?.message||'Unknown error')+'. Your cached sessions remain available.',true);
+    }
+   }else trainingStatus('Not connected. Paste your tracker link to add training charts.');
    localStorage.setItem(STAMP_KEY,JSON.stringify({when:new Date().toISOString(),entries:result.entries,foods:result.foods}));
    lastFetch=Date.now();
    status('Up to date · '+result.entries+' chat entries · '+result.foods+' saved foods · '+activityResult.count+' activity records · '+weightResult.count+' weigh-ins'+(meals.skipped+foods.skipped+activityData.skipped+weightData.skipped?' · '+(meals.skipped+foods.skipped+activityData.skipped+weightData.skipped)+' incomplete rows skipped':'')+(result.conflicts?' · '+result.conflicts+' local IDs protected':''));
@@ -121,6 +175,15 @@ function autoCheck(){
 function bootstrap(){
  if(booted||!window.FuelLabBridge?.ready)return;
  booted=true;$('#syncSheetId').value=saved();
+ $('#trainingSheetId').value=savedTraining();
+ $('#trainingSheetId').addEventListener('change',()=>{
+   const value=$('#trainingSheetId').value.trim();
+   if(!value){try{localStorage.removeItem(TRAINING_KEY);}catch(_){}trainingStatus('Tracker disconnected. Cached sessions remain available.');return;}
+   const id=idFrom(value);
+   if(!id)return trainingStatus('That does not look like a Google Sheets link.',true);
+   try{localStorage.setItem(TRAINING_KEY,id);}catch(_){}
+   lastFetch=0;trainingStatus('Tracker link saved. Tap Refresh now to import sessions.');
+ });
  $('#syncConnect').addEventListener('click',connect);
  $('#syncNow').addEventListener('click',()=>refresh(true));
  $('#syncDisconnect').addEventListener('click',disconnect);
