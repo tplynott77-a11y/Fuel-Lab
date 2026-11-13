@@ -54,8 +54,14 @@ function activity(cell){
  return {id,date,kind,name:String(cell('Activity')||'Activity').slice(0,100),activeKcal:kcal,exerciseMinutes:minutes,
  durationMinutes:num(cell('Duration minutes')),updatedAt:String(cell('Updated at')||''),source:String(cell('Source')||'Apple Health').slice(0,100),origin:'google-sheets'};
 }
+function weighIn(cell){
+ const id=String(cell('Entry ID')||'').trim(),date=String(cell('Date')||'').trim(),kg=num(cell('Weight (kg)'));
+ if(!id||id.length>150||!/^\d{4}-\d{2}-\d{2}$/.test(date)||kg===null||kg<20||kg>500)return null;
+ return {id,date,kg,context:String(cell('Time / context')||'').slice(0,100),
+  source:String(cell('Source')||'ChatGPT').slice(0,100),notes:String(cell('Notes')||'').slice(0,350),origin:'google-sheets'};
+}
 async function getTab(sheet,tab){
- const range="'"+tab.replace(/'/g,"''")+"'!A1:"+(tab==='Activity'?'L':'O');
+ const range="'"+tab.replace(/'/g,"''")+"'!A1:"+(tab==='Activity'?'L':tab==='Weight Log'?'G':'O');
  const url='https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(sheet)+'/values/'+encodeURIComponent(range)+'?valueRenderOption=FORMATTED_VALUE';
  const response=await fetch(url,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
  if(!response.ok){
@@ -72,15 +78,17 @@ async function refresh(force=false){
  if(busy||(!force&&Date.now()-lastFetch<60000))return;
  busy=true;status('Reading the latest ChatGPT entries…');
  try{
-   const [log,library,activityRows]=await Promise.all([getTab(sheet,'Diary'),getTab(sheet,'Saved Foods'),getTab(sheet,'Activity')]);
+   const [log,library,activityRows,weightRows]=await Promise.all([getTab(sheet,'Diary'),getTab(sheet,'Saved Foods'),getTab(sheet,'Activity'),getTab(sheet,'Weight Log')]);
    const meals=table(log,['Entry ID','Date','Meal','Food','Servings','Calories','Protein (g)','Carbs (g)','Fat (g)','Status'],diary);
    const foods=table(library,['Food ID','Name','Serving unit','Calories','Protein (g)','Carbs (g)','Fat (g)','Status'],food);
    const activityData=table(activityRows,['Record ID','Date','Kind','Active kcal','Status'],activity);
+   const weightData=table(weightRows,['Entry ID','Date','Weight (kg)','Status'],weighIn);
    const result=await window.FuelLabBridge.applyRemoteSnapshot({entries:meals.items,foods:foods.items});
    const activityResult=await window.FuelLabBridge.applyActivitySnapshot(activityData.items);
+   const weightResult=await window.FuelLabBridge.applyWeightsSnapshot(weightData.items);
    localStorage.setItem(STAMP_KEY,JSON.stringify({when:new Date().toISOString(),entries:result.entries,foods:result.foods}));
    lastFetch=Date.now();
-   status('Up to date · '+result.entries+' chat entries · '+result.foods+' saved foods · '+activityResult.count+' activity records'+(meals.skipped+foods.skipped+activityData.skipped?' · '+(meals.skipped+foods.skipped+activityData.skipped)+' incomplete rows skipped':'')+(result.conflicts?' · '+result.conflicts+' local IDs protected':''));
+   status('Up to date · '+result.entries+' chat entries · '+result.foods+' saved foods · '+activityResult.count+' activity records · '+weightResult.count+' weigh-ins'+(meals.skipped+foods.skipped+activityData.skipped+weightData.skipped?' · '+(meals.skipped+foods.skipped+activityData.skipped+weightData.skipped)+' incomplete rows skipped':'')+(result.conflicts?' · '+result.conflicts+' local IDs protected':''));
  }catch(e){console.warn('Fuel Lab sync:',e);status('Sync failed: '+(e?.message||'Unknown error')+' Your local diary remains intact.',true)}
  finally{busy=false}
 }
