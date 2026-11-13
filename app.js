@@ -11,6 +11,16 @@ const uid=()=>window.crypto?.randomUUID?.()||'local-'+Date.now().toString(36)+'-
 let db;
 let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[],activity:[],weights:[],progressWeekOffset:0};
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3600);}
+function applyTheme(value){
+ const mode=value==='dark'?'dark':'light';
+ document.documentElement.dataset.theme=mode;
+ document.documentElement.style.colorScheme=mode;
+ const meta=document.querySelector('meta[name="theme-color"]');
+ if(meta)meta.setAttribute('content',mode==='light'?'#edf4fc':'#0b121d');
+ try{localStorage.setItem('fuel-lab-theme',mode);}catch(_){}
+ const selector=$('#themeSelect');
+ if(selector)selector.value=mode;
+}
 // iOS Safari can close IndexedDB connections while a PWA is backgrounded.
 // Reopen a stale connection before reading/writing; do not delete or reset the database.
 let openPromise=null;
@@ -131,6 +141,8 @@ $('#parseResults').addEventListener('click',e=>{if(e.target.id==='saveParsed')ad
 $('#foodPicker').addEventListener('change',renderPicker);$('#foodQty').addEventListener('input',renderPicker);$('#addSelected').addEventListener('click',()=>addFromPicker().catch(showError));
 $('#foodForm').addEventListener('submit',e=>createFood(e).catch(showError));
 $('#foodList').addEventListener('click',async e=>{const del=e.target.closest('[data-delete-food]');if(!del)return;const food=state.foods.find(f=>f.id===del.dataset.deleteFood);if(food?.origin==='google-sheets')return toast('Ask ChatGPT to delete this cloud food.');if(food&&confirm(`Delete “${food.name}” from the saved food library? Existing diary records will remain.`)){await op('foods','delete',food.id);await reload();render();toast('Saved food removed.');}});
+$('#themeSelect').value=document.documentElement.dataset.theme==='dark'?'dark':'light';
+$('#themeSelect').addEventListener('change',e=>applyTheme(e.target.value));
 $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const next={id:'settings'};for(const k of ['kcal','protein','carbs','fat']){const v=Number($('#target'+k[0].toUpperCase()+k.slice(1)).value);if(!Number.isFinite(v)||v<=0||v>50000)return toast('Enter valid positive targets.');next[k]=v;}const raw=$('#activityBaseline').value.trim();const baseline=raw===''?null:Number(raw),pct=Number($('#activityCreditPct').value);if((baseline!==null&&(!Number.isFinite(baseline)||baseline<0||baseline>20000))||!Number.isFinite(pct)||pct<0||pct>100)return toast('Check the activity baseline and percentage.');next.activityBaselineKcal=baseline;next.exerciseCreditPct=pct;await op('prefs','put',next);await reload();render();toast('Targets updated.');});
 $('#exportBtn').addEventListener('click',exportBackup);$('#importInput').addEventListener('change',async e=>{try{await restoreBackup(e.target.files[0]);}catch(err){showError(err)}finally{e.target.value='';}});
 }
