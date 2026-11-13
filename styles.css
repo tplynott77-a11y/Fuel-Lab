@@ -146,3 +146,27 @@ html[data-theme="light"] .chat-first a{color:#fff}
 .theme-preview .swatch-navy{background:#193a64}
 @media(max-width:480px){.chat-first{align-items:stretch;flex-direction:column;padding:15px}.chat-first a{width:100%}}
 @media(prefers-reduced-motion:reduce){html .screen{animation:none}#toast{transition:none}}
+
+/* v0.6 — Read-only Swim & Strength overview */
+.training-card{padding:19px;margin:20px 0 24px}
+.training-card h2{font-size:20px;letter-spacing:-.5px;margin:7px 0}
+.training-card h3{font-size:14px;margin:19px 0 11px}
+.training-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:18px 0 6px}
+.training-stat{padding:13px 11px;background:var(--surface2);border:1px solid var(--line);border-radius:13px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.training-stat small{font-size:10px;color:var(--muted);line-height:1.4}
+.training-stat strong{font-size:20px;color:var(--mint);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.training-stat span{font-size:10px;color:var(--muted)}
+.training-list{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.training-item{display:grid;grid-template-columns:65px 1fr;align-items:center;gap:10px;padding:11px 13px;border-top:1px solid var(--line)}
+.training-item:first-child{border-top:0}
+.training-date{font-size:11px;color:var(--muted)}
+.training-item strong{display:block;font-size:12px}
+.training-item div>span{display:block;font-size:11px;line-height:1.55;color:var(--muted)}
+.training-lifts{margin-top:15px}
+.training-lift{display:flex;gap:15px;align-items:baseline;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.training-lift:last-child{border-bottom:0}
+.training-lift strong{color:var(--mint);white-space:nowrap}
+.training-link-box{border-top:1px solid var(--line);margin-top:15px;padding-top:6px}
+.training-sync-status{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px}
+.training-sync-status.problem{border-color:#b86265;color:#cb6464}
+@media(max-width:430px){.training-card{padding:14px}.training-stat{padding:11px 7px}.training-stat strong{font-size:17px}.training-item{grid-template-columns:55px 1fr;gap:7px}}
