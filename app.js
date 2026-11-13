@@ -9,7 +9,7 @@ const today=()=>dayString(new Date());
 const dateObject=d=>new Date(d+'T12:00:00');
 const uid=()=>window.crypto?.randomUUID?.()||'local-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
 let db;
-let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[],activity:[],weights:[],progressWeekOffset:0};
+let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[],activity:[],weights:[],progressWeekOffset:0,training:{swims:[],gyms:[],strength:[]}};
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3600);}
 function applyTheme(value){
  const mode=value==='dark'?'dark':'light';
@@ -80,12 +80,12 @@ function op(store,type,arg){
   req.onsuccess=()=>setResult(req.result);
  });
 }
-async function reload(){const [foods,entries,prefs,activityCache,weightCache]=await Promise.all([op('foods','getAll'),op('entries','getAll'),op('prefs','get','settings'),op('prefs','get','health-activity-cache'),op('prefs','get','weight-cache')]);state.foods=foods.sort((a,b)=>a.name.localeCompare(b.name));state.entries=entries;state.prefs=prefs||state.prefs;state.activity=Array.isArray(activityCache?.items)?activityCache.items:[];state.weights=Array.isArray(weightCache?.items)?weightCache.items:[];}
+async function reload(){const [foods,entries,prefs,activityCache,weightCache,trainingCache]=await Promise.all([op('foods','getAll'),op('entries','getAll'),op('prefs','get','settings'),op('prefs','get','health-activity-cache'),op('prefs','get','weight-cache'),op('prefs','get','training-cache')]);state.foods=foods.sort((a,b)=>a.name.localeCompare(b.name));state.entries=entries;state.prefs=prefs||state.prefs;state.activity=Array.isArray(activityCache?.items)?activityCache.items:[];state.weights=Array.isArray(weightCache?.items)?weightCache.items:[];state.training=trainingCache?.items||{swims:[],gyms:[],strength:[]};}
 async function firstRun(){const seeded=await op('prefs','get','starter-seeded');if(!seeded){for(const food of starterFoods)await op('foods','put',food);await op('prefs','put',state.prefs);await op('prefs','put',{id:'starter-seeded',done:true});}await reload();}
 const meals=['Breakfast','Lunch','Dinner','Snacks'];
 function nav(screen){state.screen=screen;$$('.screen').forEach(x=>x.classList.toggle('hidden',x.id!=='screen-'+screen));$$('.bottom-nav button').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));window.scrollTo({top:0,behavior:'instant'});render();}
 function render(){renderDiary();renderActivity();renderProgress();renderPicker();renderFoods();renderSettings();renderParsed();}
-function renderProgress(){if(!window.FuelProgress)return;$('#progressContent').innerHTML=window.FuelProgress.display({entries:state.entries,activity:state.activity,weights:state.weights,prefs:state.prefs,today:today(),offset:state.progressWeekOffset});}
+function renderProgress(){if(!window.FuelProgress)return;$('#progressContent').innerHTML=window.FuelProgress.display({entries:state.entries,activity:state.activity,weights:state.weights,prefs:state.prefs,today:today(),offset:state.progressWeekOffset,training:state.training});}
 
 function activeForDay(date){return state.activity.find(x=>x.date===date&&x.kind==='Daily Active')||null;}
 function adjustmentForDay(date){
@@ -210,7 +210,25 @@ async function applyWeightsSnapshot(weights){
  await reload();render();
  return {count:weights.length};
 }
-window.FuelLabBridge={ready:false,applyRemoteSnapshot,applyActivitySnapshot,applyWeightsSnapshot};
+async function applyTrainingSnapshot(training){
+ if(!training||typeof training!=='object')throw Error('Invalid training snapshot');
+ const data={};
+ for(const [name,maximum] of [['swims',10000],['gyms',10000],['strength',15000]]){
+  const rows=training[name];
+  if(!Array.isArray(rows)||rows.length>maximum)throw Error('Invalid training '+name);
+  const seen=new Set();
+  for(const row of rows){
+   if(!row||typeof row.id!=='string'||row.id.length>180||!row.id||
+      typeof row.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(row.date)||seen.has(row.id))throw Error('Invalid training record');
+   seen.add(row.id);
+  }
+  data[name]=rows;
+ }
+ await op('prefs','put',{id:'training-cache',items:data,updatedAt:new Date().toISOString()});
+ await reload();render();
+ return {swims:data.swims.length,gyms:data.gyms.length,strength:data.strength.length};
+}
+window.FuelLabBridge={ready:false,applyRemoteSnapshot,applyActivitySnapshot,applyWeightsSnapshot,applyTrainingSnapshot};
 
 function showError(err){console.error('Fuel Lab:',err);toast('Could not save that change. Check device storage and try again.');}
 async function init(){try{await ensureDb();await firstRun();attach();render();window.FuelLabBridge.ready=true;window.dispatchEvent(new Event('fuel-lab-ready'));if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(console.warn);}catch(e){console.error(e);$('#app').innerHTML='<main style="padding:45px 20px"><h1>Local storage unavailable</h1><p>Fuel Lab could not open its local diary. Try opening it from its HTTPS web address in Safari rather than a local file or private browsing window.</p><p>No information was uploaded.</p></main>';}}
