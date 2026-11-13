@@ -1,4 +1,4 @@
-# Fuel Lab — ChatGPT and Apple Health connected dashboard (v0.3)
+# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.4)
 
 A personal iPhone app powered by ChatGPT conversations and a private Google Sheet. No extra OpenAI API billing.
 
@@ -9,6 +9,15 @@ A personal iPhone app powered by ChatGPT conversations and a private Google Shee
 4. Fuel Lab will refresh automatically when you return to it, reconnect to the internet, or every two minutes while visible and authorised. **Refresh now** is available too.
 
 **Limitations:** Google browser OAuth tokens expire; the app does not persist tokens. When the app is terminated or a token expires, tap **Connect Google** again. iOS doesn't permit reliable periodic background sync when the app is closed.
+
+## Progress tab — weight and weekly summaries (v0.4)
+
+- New **Progress** screen: recorded weight history (line chart), latest weight and change from the previous weigh-in.
+- New **Weight Log** tab in the private Google Sheet: Entry ID, Date, Weight (kg), Time / context, Source, Notes, Status. No speculative/historical weights were inserted. Ask ChatGPT: "Log my weight as 102 kg for today in Fuel Lab" and it will add a dated row; changes to a dated entry should update that row rather than duplicate it. Weight is stored as kg, regardless of how you state it.
+- **Monday–Sunday weekly summary**: average calories and protein on days with food entries, total daily active calories and exercise minutes from Apple Health, and a seven-day calorie chart. Back/forward arrows browse earlier weeks; the current week is the latest.
+- **Missing days stay missing, never zero**. The number of logged days is displayed. The weekly average is *only of days containing diary entries*; incomplete food logs may underestimate even those days. Active calories come from **Daily Active** records only, not individual workouts, to avoid double-counting.
+- Weight and weekly data are cached on your iPhone for offline use. The same existing Google read-only sign-in refreshes Weight Log with your food and activity records. Your private Sheet stays private and there is no additional API billing.
+- The v1 backup remains valid; v0.4 exports weights too and restores them when present, without changing the existing local database schema.
 
 ## Apple Health integration (v0.3)
 
@@ -33,6 +42,7 @@ A personal iPhone app powered by ChatGPT conversations and a private Google Shee
 - **Saved Foods:** Food ID, Name, Serving unit, Calories, Protein (g), Carbs (g), Fat (g), Aliases, Accuracy, Source, Notes, Status. Nutrition is **per saved serving**.
 - **Recipes:** Stores ingredients and per-serving values; not yet a separate page in the app.
 - **Settings:** Baseline target 2470 kcal, protein 160g, carbs 270g, fat 80g. On-phone targets remain locally editable and aren't overwritten by Sheets.
+- **Weight Log:** Date-stamped weigh-ins for Progress; no data is inferred from memory.
 
 ## Logging with ChatGPT
 Tell ChatGPT: “Log that dinner in Fuel Lab.” If the food is approximate, it should label Accuracy as Estimated and record assumptions. When you correct a meal, ChatGPT should update its existing Entry ID instead of appending a duplicate.
@@ -40,7 +50,7 @@ Tell ChatGPT: “Log that dinner in Fuel Lab.” If the food is approximate, it 
 The PWA is hosted with GitHub Pages. Its local quick-entry parser is still rule-based; actual AI interpretation takes place in ChatGPT.
 
 ## Files
-index.html, app.js, sync.js, food-core.js, styles.css, sw.js, manifest.webmanifest, icons/.
+index.html, app.js, sync.js, progress.js, food-core.js, styles.css, sw.js, manifest.webmanifest, icons/.
 
 ## iPhone IndexedDB reconnection (v0.2.3)
 
