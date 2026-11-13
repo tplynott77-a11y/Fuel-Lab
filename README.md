@@ -1,4 +1,13 @@
-# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.6)
+# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.7)
+
+## Refresh the installed iPhone Home Screen app
+- Scroll to the very bottom of **Settings** and tap **Check for updates & reload**.
+- Fuel Lab asks its service worker to check for a newer version, then reloads with a fresh URL. App HTML, JavaScript and CSS use network-first, no-store requests when online, with offline cache fallbacks.
+- This does **not** erase IndexedDB, food records, exercise data, saved spreadsheet links, or theme preferences.
+- An internet connection is required; Google OAuth tokens live only in memory, so you may need to reconnect after reloading. A GitHub Pages deployment must complete before the new version is available.
+- On first installing this update, close and reopen the Home Screen app once if the button has not appeared yet.
+
+
 
 A personal iPhone app powered by ChatGPT conversations and a private Google Sheet. No extra OpenAI API billing.
 
