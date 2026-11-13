@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#0b121d" />
+<meta name="theme-color" content="#edf4fc" />
+<script>
+(function(){
+  let mode='light';
+  try {const saved=localStorage.getItem('fuel-lab-theme'); if(saved==='light'||saved==='dark')mode=saved;}catch(_){}
+  document.documentElement.dataset.theme=mode;
+  document.documentElement.style.colorScheme=mode;
+  document.querySelector('meta[name="theme-color"]').setAttribute('content',mode==='light'?'#edf4fc':'#0b121d');
+})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Fuel Lab" />
@@ -19,6 +28,7 @@
   <main>
     <section class="screen" id="screen-today">
       <div class="welcome"><div class="eyebrow">TODAY'S FUEL</div><h1>Build better days.</h1><p>A simple record of what you eat. Your food, your numbers, your control.</p></div>
+      <section class="chat-first card" aria-label="Log food in ChatGPT"><div><div class="eyebrow">CHAT-FIRST LOGGING</div><h2>Tell ChatGPT what you ate.</h2><p>Your conversation is the food log interface. Fuel Lab shows the results after Google Sheets syncs.</p></div><a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer">Open ChatGPT ↗</a></section>
       <div class="sync-summary" id="syncSummary" aria-live="polite">Your food diary is saved locally. Connect Google Sheets in Settings for ChatGPT entries.</div>
       <div class="date-nav"><button class="circle-button" id="prevDate" aria-label="Previous day">‹</button><div class="date-label" id="dateLabel">Today</div><button class="circle-button" id="nextDate" aria-label="Next day">›</button></div>
       <div class="hero card"><div class="cal-ring" id="calRing"><div class="cal-center"><strong id="calConsumed">0</strong><span>of <b id="calTarget">2470</b> kcal</span></div></div><div class="cal-aside"><div class="eyebrow">DAILY BALANCE</div><div class="remaining" id="calRemaining">2,470</div><p id="balanceLabel">kcal remaining</p><div class="tiny">Based on the targets you set. Estimates are not exact measurements.</div></div></div>
@@ -54,6 +64,7 @@
     </section>
     <section class="screen hidden" id="screen-settings">
       <div class="eyebrow">YOUR CONTROL PANEL</div><h1>Settings & backup.</h1><p class="helper">Your diary remains saved on this device. With your approval, Fuel Lab reads meals that ChatGPT has logged to your private Google Sheet.</p>
+      <section class="card form-card appearance-card"><div class="eyebrow">MAKE IT YOURS</div><h2>Appearance</h2><p class="helper">Cloud Blue is the new light look. You can switch back to the original dark style at any time, without affecting your diary.</p><label for="themeSelect">Colour theme</label><select class="control" id="themeSelect"><option value="light">Cloud Blue · Light</option><option value="dark">Classic Dark · Original</option></select><div class="theme-preview" aria-hidden="true"><span class="swatch-blue"></span><span class="swatch-ice"></span><span class="swatch-navy"></span></div><p class="small-note">Appearance is saved on this device only.</p></section>
       <div class="card form-card sync-card" id="syncSettings">
         <div class="eyebrow">PRIVATE GOOGLE SHEETS</div><h2>ChatGPT → Fuel Lab</h2>
         <p class="helper">Tell ChatGPT what you ate. It updates your private spreadsheet, and Fuel Lab imports those entries on return to the app. Local entries are never uploaded.</p>
@@ -76,7 +87,7 @@
 <p class="small-note">Apple Health's Move calories include both exercise and ordinary movement. Leaving the baseline blank keeps your 2,470 kcal goal unchanged while still showing activity data. Do not add workout calories twice.</p>
 </div><button type="submit" class="secondary">Save targets</button></form></div>
       <div class="card form-card"><h2>Your data stays yours</h2><p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser storage can be erased if the app or its website data is removed.</p><button class="secondary" id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup file</label><input id="importInput" type="file" accept="application/json,.json" hidden /></div>
-      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.4 · PROGRESS & WEEKLY TRENDS</p></div>
+      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.5 · CLOUD BLUE</p></div>
     </section>
   </main>
   <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="progress"><span>↗</span>Progress</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
