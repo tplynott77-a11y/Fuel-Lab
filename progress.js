@@ -52,6 +52,32 @@ function weightChart(weights){
  return '<svg class="progress-weight-graph" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Weight history over '+weights.length+' measurements" xmlns="http://www.w3.org/2000/svg">'+dotted+'<path d="'+line+'" fill="none" stroke="var(--mint)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+circles+
  '<text x="'+p.l+'" y="'+(h-3)+'" fill="var(--muted)" font-size="10">'+shortDate(weights[0].date)+'</text><text x="'+(w-p.r)+'" y="'+(h-3)+'" fill="var(--muted)" font-size="10" text-anchor="end">'+shortDate(weights.at(-1).date)+'</text></svg>';
 }
+function trainingPanel(model,week){
+ const data=model.training||{};
+ const swims=Array.isArray(data.swims)?data.swims:[];
+ const gyms=Array.isArray(data.gyms)?data.gyms:[];
+ const strength=Array.isArray(data.strength)?data.strength:[];
+ const begin=week.dates[0],end=week.dates[6];
+ const during=record=>record.date>=begin&&record.date<=end;
+ const wkSwims=swims.filter(during),wkGyms=gyms.filter(during),wkStrength=strength.filter(during);
+ const distance=wkSwims.reduce((n,x)=>n+(Number(x.distanceM)||0),0);
+ const sessionRecords=[
+  ...wkSwims.map(x=>({date:x.date,label:'Swim',detail:(x.type||x.setting||'Pool session')+' · '+fmt(x.distanceM)+' m'})),
+  ...wkGyms.map(x=>({date:x.date,label:'Gym',detail:(x.session||'Workout')+(x.workingSets!=null?' · '+fmt(x.workingSets)+' sets':'') }))
+ ].sort((a,b)=>b.date.localeCompare(a.date)||a.label.localeCompare(b.label)).slice(0,5);
+ const liftRecords=wkStrength.filter(x=>x.loadKg!=null).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
+ const hasData=swims.length+gyms.length+strength.length>0;
+ if(!hasData)return '<section class="card training-card"><div class="eyebrow">SWIM & STRENGTH</div><h2>Your training, alongside your fuel.</h2><p class="progress-hint">Connect your existing Swim & Strength Progress Tracker under Settings to see recorded workouts here. No second workout diary or new manual entry process.</p></section>';
+ const stats=[
+  ['Swim distance',fmt(distance/1000)+' km',wkSwims.length+' recorded swims'],
+  ['Gym sessions',String(wkGyms.length),'Recorded this week'],
+  ['Strength records',String(wkStrength.length),'Exercise entries this week']
+ ].map(([label,value,sub])=>'<div class="training-stat"><small>'+label+'</small><strong>'+value+'</strong><span>'+sub+'</span></div>').join('');
+ const sessions=sessionRecords.length?sessionRecords.map(x=>'<div class="training-item"><span class="training-date">'+shortDate(x.date)+'</span><div><strong>'+esc(x.label)+'</strong><span>'+esc(x.detail)+'</span></div></div>').join(''):'<p class="progress-hint">No swim or gym sessions recorded for this week.</p>';
+ const lifts=liftRecords.length?'<div class="training-lifts"><h3>Recent recorded lifts</h3>'+liftRecords.map(x=>'<div class="training-lift"><span>'+esc(x.exercise)+'</span><strong>'+fmt(x.loadKg)+' kg</strong></div>').join('')+'</div>':'';
+ return '<section class="card training-card"><div class="eyebrow">SWIM & STRENGTH</div><h2>Training overview</h2><p class="progress-hint">Read-only from your separate training spreadsheet, for '+shortDate(begin)+' – '+shortDate(end)+'. Apple Health daily active energy already includes workouts, so calories are never added twice.</p>'+
+ '<div class="training-stats">'+stats+'</div><h3>Recorded sessions</h3><div class="training-list">'+sessions+'</div>'+lifts+'</section>';
+}
 function display(model){
  const m=summarize(model);
  const title=shortDate(m.dates[0])+' – '+shortDate(m.dates[6]);
@@ -79,6 +105,7 @@ function display(model){
  '<div class="progress-stats">'+summaryCards+'</div>'+
  '<section class="card progress-week-card"><div class="progress-card-head"><div><h2>Daily calorie intake</h2><p class="progress-subtitle">Compared with your '+fmt(base)+' kcal base target</p></div><span class="progress-meta">'+m.loggedDays+'/7 days</span></div>'+
  '<div class="progress-day-chart">'+bars+'</div><p class="progress-hint">Missing days are not counted as zero. Averages use only logged days; incomplete days may still underestimate intake. Calorie targets are not measures of energy expenditure or body-fat change.</p></section>'+
+ trainingPanel(model,m)+
  '<section class="card progress-footer"><div class="eyebrow">KEEP IT SIMPLE</div><h2>Log your weight in chat</h2><p>Whenever you weigh yourself, tell ChatGPT the number and date. It will be saved to your private Weight Log and appear here after Fuel Lab syncs.</p><a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer">Open ChatGPT to log a weigh-in ↗</a></section>';
 }
 window.FuelProgress={summarize,display,weekDates};
