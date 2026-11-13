@@ -1,4 +1,4 @@
-# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.5)
+# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.6)
 
 A personal iPhone app powered by ChatGPT conversations and a private Google Sheet. No extra OpenAI API billing.
 
@@ -9,6 +9,14 @@ A personal iPhone app powered by ChatGPT conversations and a private Google Shee
 4. Fuel Lab will refresh automatically when you return to it, reconnect to the internet, or every two minutes while visible and authorised. **Refresh now** is available too.
 
 **Limitations:** Google browser OAuth tokens expire; the app does not persist tokens. When the app is terminated or a token expires, tap **Connect Google** again. iOS doesn't permit reliable periodic background sync when the app is closed.
+
+## Connected Swim & Strength tracker (v0.6)
+- Under **Settings → ChatGPT → Fuel Lab**, paste the existing, separate **Swim & Strength Progress Tracker** Google Sheet link into **Swim & Strength tracker (optional)**. Keep this private URL out of the public repository.
+- Use your existing **Connect Google** sign-in, then **Refresh now**. The same read-only token fetches **Swim Log**, **Gym Sessions** and **Strength Log** from the separate private spreadsheet.
+- The **Progress** tab shows weekly swimming distance, logged gym sessions, exercise records and selected recent sessions/lifts. The week selector also changes the training view. Missing training entries are not inferred.
+- Tracker refresh failure is non-destructive and cannot block food, weight or Apple Health refresh. Previously cached training records remain available offline.
+- **No double-counting:** workout calories are not added to all-day Apple Health active calories. Training data is never uploaded from Fuel Lab and the original tracker sheet is not edited.
+- If you remove the tracker link, previous offline cached records remain visible until replaced. Keep using ChatGPT to record or correct workouts in the original spreadsheet.
 
 ## Appearance and chat-first home screen (v0.5)
 - **Cloud Blue (light)** is the new default appearance, with brighter surfaces, blue accents and clearer chart contrast.
