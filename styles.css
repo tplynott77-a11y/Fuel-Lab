@@ -177,3 +177,43 @@ html[data-theme="light"] .chat-first a{color:#fff}
 .app-update-card .primary:disabled{opacity:.7;cursor:wait}
 .update-status{font-size:12px;line-height:1.5;color:var(--muted);margin:10px 0 0}
 .update-status:empty{display:none}
+
+/* v0.8 — Performance Lab, matching Cloud Blue and Classic Dark */
+.performance-lab{padding:19px;margin:22px 0 24px;overflow:hidden}
+.perf-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.perf-head h2{margin:6px 0 3px;font-size:21px;letter-spacing:-.45px}
+.perf-tag{font-weight:750;font-size:9px;letter-spacing:1px;white-space:nowrap;color:var(--mint);border:1px solid var(--line);padding:7px 9px;border-radius:20px;background:var(--surface2)}
+.perf-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;margin:18px 0 17px}
+.perf-tabs button{min-height:44px;padding:10px 12px;font-size:13px;font-weight:750;border-radius:10px;background:transparent;border:1px solid transparent;color:var(--muted)}
+.perf-tabs button.selected{background:var(--surface);color:var(--mint);border-color:var(--line);box-shadow:0 2px 9px #122d4c12}
+.perf-tabs button:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.perf-select{margin-bottom:15px}
+.perf-select label{font-size:12px;font-weight:700;display:block;margin:0 0 7px;color:var(--muted)}
+.perf-select select{max-width:100%}
+.perf-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 22px}
+.perf-stat{border:1px solid var(--line);background:var(--surface2);padding:12px 10px;border-radius:13px;min-width:0;display:flex;flex-direction:column;gap:5px}
+.perf-stat small{color:var(--muted);font-size:10px;line-height:1.35}
+.perf-stat strong{font-size:19px;letter-spacing:-.55px;font-weight:800;color:var(--mint);line-height:1.2;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.perf-stat span{font-size:10px;color:var(--muted);line-height:1.4}
+.perf-graph-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:13px 0 0}
+.perf-graph-head h3{font-size:14px;letter-spacing:-.15px;margin:0}
+.perf-graph-head span{font-size:11px;color:var(--muted);text-align:right}
+.perf-subhead{margin-top:26px}
+.perf-chart{display:block;width:100%;height:auto;max-height:240px;margin:8px auto 5px;overflow:visible}
+.perf-history{margin-top:15px}
+.perf-history h3{font-size:14px;margin:15px 0 8px}
+.perf-row{display:grid;grid-template-columns:83px minmax(0,1fr) minmax(0,1.1fr);gap:8px;border-bottom:1px solid var(--line);padding:9px 1px;align-items:center;font-size:11px}
+.perf-row>span{color:var(--muted);overflow-wrap:anywhere}
+.perf-row strong{font-size:12px;white-space:nowrap}
+.perf-row>span:last-child{text-align:right}
+.perf-note{font-size:11px;line-height:1.65;color:var(--muted);margin:11px 0 8px}
+.perf-empty{padding:17px;border:1px dashed var(--line);border-radius:12px;background:var(--surface2);color:var(--muted);font-size:12px;line-height:1.6;margin-top:14px}
+@media(max-width:430px){
+ .performance-lab{padding:14px}
+ .perf-stat{padding:10px 7px}
+ .perf-stat strong{font-size:16px}
+ .perf-stat small{font-size:9px}
+ .perf-row{grid-template-columns:71px minmax(0,1fr) minmax(0,.9fr);gap:5px;font-size:10px}
+ .perf-row strong{font-size:11px}
+ .perf-head h2{font-size:19px}
+}
