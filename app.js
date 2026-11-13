@@ -9,7 +9,7 @@ const today=()=>dayString(new Date());
 const dateObject=d=>new Date(d+'T12:00:00');
 const uid=()=>window.crypto?.randomUUID?.()||'local-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
 let db;
-let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[],activity:[]};
+let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[],activity:[],weights:[],progressWeekOffset:0};
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3600);}
 // iOS Safari can close IndexedDB connections while a PWA is backgrounded.
 // Reopen a stale connection before reading/writing; do not delete or reset the database.
@@ -70,11 +70,12 @@ function op(store,type,arg){
   req.onsuccess=()=>setResult(req.result);
  });
 }
-async function reload(){const [foods,entries,prefs,activityCache]=await Promise.all([op('foods','getAll'),op('entries','getAll'),op('prefs','get','settings'),op('prefs','get','health-activity-cache')]);state.foods=foods.sort((a,b)=>a.name.localeCompare(b.name));state.entries=entries;state.prefs=prefs||state.prefs;state.activity=Array.isArray(activityCache?.items)?activityCache.items:[];}
+async function reload(){const [foods,entries,prefs,activityCache,weightCache]=await Promise.all([op('foods','getAll'),op('entries','getAll'),op('prefs','get','settings'),op('prefs','get','health-activity-cache'),op('prefs','get','weight-cache')]);state.foods=foods.sort((a,b)=>a.name.localeCompare(b.name));state.entries=entries;state.prefs=prefs||state.prefs;state.activity=Array.isArray(activityCache?.items)?activityCache.items:[];state.weights=Array.isArray(weightCache?.items)?weightCache.items:[];}
 async function firstRun(){const seeded=await op('prefs','get','starter-seeded');if(!seeded){for(const food of starterFoods)await op('foods','put',food);await op('prefs','put',state.prefs);await op('prefs','put',{id:'starter-seeded',done:true});}await reload();}
 const meals=['Breakfast','Lunch','Dinner','Snacks'];
 function nav(screen){state.screen=screen;$$('.screen').forEach(x=>x.classList.toggle('hidden',x.id!=='screen-'+screen));$$('.bottom-nav button').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));window.scrollTo({top:0,behavior:'instant'});render();}
-function render(){renderDiary();renderActivity();renderPicker();renderFoods();renderSettings();renderParsed();}
+function render(){renderDiary();renderActivity();renderProgress();renderPicker();renderFoods();renderSettings();renderParsed();}
+function renderProgress(){if(!window.FuelProgress)return;$('#progressContent').innerHTML=window.FuelProgress.display({entries:state.entries,activity:state.activity,weights:state.weights,prefs:state.prefs,today:today(),offset:state.progressWeekOffset});}
 
 function activeForDay(date){return state.activity.find(x=>x.date===date&&x.kind==='Daily Active')||null;}
 function adjustmentForDay(date){
@@ -111,17 +112,18 @@ async function addFromPicker(){const f=state.foods.find(x=>x.id===$('#foodPicker
 async function addParsed(){let added=0;const meal=$('#quickMeal').value;for(const candidate of state.parsed){if(!candidate.matched)continue;const food=state.foods.find(f=>f.id===candidate.foodId);if(food){await addFoodEntry(food,candidate.qty,meal);added++;}}if(!added)return toast('No recognised foods to add.');state.parsed=[];$('#quickText').value='';await reload();nav('today');toast(`${added} food${added===1?'':'s'} added. Check your totals.`);}
 function validateNumber(n){return Number.isFinite(n)&&n>=0&&n<=1000000;}
 async function createFood(e){e.preventDefault();const get=s=>$(s).value.trim();const f={id:uid(),name:get('#newName'),portion:get('#newPortion'),kcal:Number(get('#newKcal')),protein:Number(get('#newProtein')),carbs:Number(get('#newCarbs')),fat:Number(get('#newFat')),aliases:[],source:'custom'};if(!f.name||!f.portion||!['kcal','protein','carbs','fat'].every(k=>validateNumber(f[k])))return toast('Check the name and nutrition numbers.');await op('foods','put',f);await reload();$('#foodForm').reset();render();toast('Food saved locally.');}
-async function exportBackup(){const payload={kind:'fuel-lab-backup',version:1,exportedAt:new Date().toISOString(),foods:state.foods,entries:state.entries,prefs:state.prefs,activity:state.activity};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fuel-lab-backup-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Backup downloaded. Save it to iCloud Drive.');}
+async function exportBackup(){const payload={kind:'fuel-lab-backup',version:1,exportedAt:new Date().toISOString(),foods:state.foods,entries:state.entries,prefs:state.prefs,activity:state.activity,weights:state.weights};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fuel-lab-backup-${today()}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Backup downloaded. Save it to iCloud Drive.');}
 async function restoreBackup(file){if(!file||file.size>15*1024*1024)return toast('Choose a valid backup smaller than 15 MB.');let data;try{data=JSON.parse(await file.text());}catch(e){return toast('That is not a valid JSON backup.');}
 if(data.kind!=='fuel-lab-backup'||data.version!==1||!Array.isArray(data.entries)||!Array.isArray(data.foods)||!data.prefs)return toast('This is not a Fuel Lab backup.');
 if(data.entries.some(x=>!x.id||!x.date||!meals.includes(x.meal)||!['kcal','protein','carbs','fat'].every(k=>validateNumber(Number(x[k]))))||data.foods.some(x=>!x.id||!x.name||!x.portion||!['kcal','protein','carbs','fat'].every(k=>validateNumber(Number(x[k])))))return toast('Backup contains invalid diary or food values.');
 if(!confirm(`Replace the current local diary with ${data.entries.length} imported entries and ${data.foods.length} foods? Export a backup first if you want to keep the current data.`))return;
 // Single transaction: either all three stores restore, or none of them do.
-await transact(['foods','entries','prefs'],'readwrite',txn=>{for(const name of ['foods','entries'])txn.objectStore(name).clear();txn.objectStore('prefs').clear();for(const food of data.foods)txn.objectStore('foods').put(food);for(const item of data.entries)txn.objectStore('entries').put(item);txn.objectStore('prefs').put({...data.prefs,id:'settings'});txn.objectStore('prefs').put({id:'starter-seeded',done:true});if(Array.isArray(data.activity))txn.objectStore('prefs').put({id:'health-activity-cache',items:data.activity});});
+await transact(['foods','entries','prefs'],'readwrite',txn=>{for(const name of ['foods','entries'])txn.objectStore(name).clear();txn.objectStore('prefs').clear();for(const food of data.foods)txn.objectStore('foods').put(food);for(const item of data.entries)txn.objectStore('entries').put(item);txn.objectStore('prefs').put({...data.prefs,id:'settings'});txn.objectStore('prefs').put({id:'starter-seeded',done:true});if(Array.isArray(data.activity))txn.objectStore('prefs').put({id:'health-activity-cache',items:data.activity});if(Array.isArray(data.weights))txn.objectStore('prefs').put({id:'weight-cache',items:data.weights});});
 await reload();render();toast('Local backup restored.');}
 function attach(){ $$('.bottom-nav button').forEach(el=>el.addEventListener('click',()=>nav(el.dataset.screen)));
 $('#prevDate').addEventListener('click',()=>{const d=dateObject(state.date);d.setDate(d.getDate()-1);state.date=dayString(d);render();});
 $('#nextDate').addEventListener('click',()=>{const d=dateObject(state.date);d.setDate(d.getDate()+1);state.date=dayString(d);render();});
+$('#progressContent').addEventListener('click',e=>{if(e.target.closest('#weekPrev')){state.progressWeekOffset--;renderProgress();}if(e.target.closest('#weekNext')){state.progressWeekOffset=Math.min(0,state.progressWeekOffset+1);renderProgress();}});
 $('#mealGroups').addEventListener('click',async e=>{const add=e.target.closest('[data-add-meal]');if(add){$('#quickMeal').value=add.dataset.addMeal;$('#pickerMeal').value=add.dataset.addMeal;nav('add');return;}const del=e.target.closest('[data-delete-entry]');if(del&&state.entries.some(x=>x.id===del.dataset.deleteEntry&&x.origin==='google-sheets'))return toast('Ask ChatGPT to delete this saved Google Sheets entry.');if(del&&confirm('Remove this food entry?')){await op('entries','delete',del.dataset.deleteEntry);await reload();render();toast('Entry removed.');}});
 $('#parseBtn').addEventListener('click',()=>{state.parsed=parseText($('#quickText').value,state.foods);renderParsed();if(!state.parsed.length)toast('Describe the food you ate first.');});
 $('#parseResults').addEventListener('change',e=>{const el=e.target.closest('[data-quantity]');if(!el)return;const matches=state.parsed.filter(x=>x.matched);const target=matches[Number(el.dataset.quantity)];const qty=Number(el.value);if(target&&qty>0&&qty<=1000){target.qty=qty;const results=$('#parseResults');const focus=el.dataset.quantity;const caret=document.activeElement===el;renderParsed();if(caret){const next=results.querySelector(`[data-quantity="${focus}"]`);next?.focus();}}});
@@ -184,7 +186,19 @@ async function applyActivitySnapshot(activity){
  await op('prefs','put',{id:'health-activity-cache',items:activity,updatedAt:new Date().toISOString()});
  await reload();render();return {count:activity.length};
 }
-window.FuelLabBridge={ready:false,applyRemoteSnapshot,applyActivitySnapshot};
+
+async function applyWeightsSnapshot(weights){
+ if(!Array.isArray(weights)||weights.length>10000)throw Error('Invalid weight data');
+ const ids=new Set();
+ for(const w of weights){
+  if(!w||typeof w.id!=='string'||!w.id||ids.has(w.id)||!/^\d{4}-\d{2}-\d{2}$/.test(w.date)||!Number.isFinite(w.kg)||w.kg<20||w.kg>500)throw Error('Invalid weigh-in row');
+  ids.add(w.id);
+ }
+ await op('prefs','put',{id:'weight-cache',items:weights,updatedAt:new Date().toISOString()});
+ await reload();render();
+ return {count:weights.length};
+}
+window.FuelLabBridge={ready:false,applyRemoteSnapshot,applyActivitySnapshot,applyWeightsSnapshot};
 
 function showError(err){console.error('Fuel Lab:',err);toast('Could not save that change. Check device storage and try again.');}
 async function init(){try{await ensureDb();await firstRun();attach();render();window.FuelLabBridge.ready=true;window.dispatchEvent(new Event('fuel-lab-ready'));if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(console.warn);}catch(e){console.error(e);$('#app').innerHTML='<main style="padding:45px 20px"><h1>Local storage unavailable</h1><p>Fuel Lab could not open its local diary. Try opening it from its HTTPS web address in Safari rather than a local file or private browsing window.</p><p>No information was uploaded.</p></main>';}}
