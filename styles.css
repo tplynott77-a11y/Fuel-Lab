@@ -27,3 +27,41 @@
 .activity-settings label{font-size:13px;font-weight:700;color:#dcece4}
 .activity-settings .small-note{margin:2px 0 12px}
 @media(max-width:500px){.health-numbers{grid-template-columns:1fr 1fr}.health-numbers>div:last-child{grid-column:1/-1}.health-head{align-items:start}.health-source{max-width:130px;white-space:normal}.health-card{padding:14px}}
+
+
+/* Fuel Lab v0.4 — Progress & weekly nutrition, phone-first */
+.progress-weight,.progress-week-card,.progress-footer{padding:18px;margin:15px 0 20px}
+.progress-card-head,.progress-week-title{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.progress-card-head h2,.progress-week-title h2,.progress-footer h2{font-size:19px;letter-spacing:-.4px;margin:5px 0}
+.progress-meta{font-size:11px;color:#aec4bc;text-align:right}
+.progress-weight-value{display:flex;align-items:baseline;gap:14px;margin-top:16px;flex-wrap:wrap}
+.progress-weight-value>strong{color:#d0f5dc;font-size:37px;font-weight:790;letter-spacing:-1.3px}
+.progress-weight-value>strong small{font-size:17px;font-weight:600;color:#afcfbf}
+.progress-weight-value>span{font-size:12px;color:#bacfc2}
+.progress-weight-graph{display:block;width:100%;max-height:210px;margin:9px auto 4px}
+.progress-empty{padding:22px 16px;margin:16px 0;background:#0e1c27;border:1px dashed #3b5c53;border-radius:13px;color:#b9cdc3;font-size:13px;line-height:1.65}
+.progress-single{display:flex;flex-direction:column;gap:3px;padding:12px 0}
+.progress-single strong{font-size:21px;color:#b6f0c6}.progress-single span{font-size:12px;color:#a8bfb4}
+.progress-hint,.progress-subtitle{font-size:11px;line-height:1.6;color:#9bb6ac;margin:9px 0 0}
+.progress-week-title{margin:25px 0 12px;flex-wrap:wrap}
+.progress-week-title h2{margin:0}
+.progress-week-controls{display:flex;gap:8px;align-items:center;background:#152730;border:1px solid #36514c;padding:4px;border-radius:13px}
+.progress-week-controls button{background:#28453f;border:0;border-radius:8px;color:#def8e6;width:30px;height:30px;font-size:23px;line-height:1;cursor:pointer}
+.progress-week-controls button:disabled{opacity:.28;cursor:default}
+.progress-week-controls span{min-width:128px;text-align:center;color:#d4e6db;font-size:12px;font-weight:700}
+.progress-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.progress-stat{min-width:0;border:1px solid #2d4b46;background:linear-gradient(130deg,#1b3432,#15242f);border-radius:15px;padding:15px 13px;display:flex;flex-direction:column;gap:7px}
+.progress-stat small{color:#afc6bd;font-size:11px}
+.progress-stat strong{font-size:21px;font-weight:800;color:#d0f5dc;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.progress-stat>span{font-size:10px;line-height:1.4;color:#90a99e}
+.progress-day-chart{display:grid;gap:11px;margin-top:17px}
+.progress-day{display:grid;grid-template-columns:37px minmax(0,1fr) 73px;gap:9px;align-items:center}
+.progress-day-label{font-size:12px;font-weight:700;color:#cedfd5}
+.progress-day-track{height:25px;border-radius:7px;background:#0c1a23;border:1px solid #30483f;position:relative;overflow:hidden}
+.progress-day-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#67ad88,#b8e7b3)}
+.progress-day-missing{font-size:10px;color:#687f78;position:absolute;left:8px;top:5px}
+.progress-target-mark{position:absolute;right:0;top:0;bottom:0;border-right:1px dashed #e6c992;opacity:.65}
+.progress-day-num{text-align:right;font-variant-numeric:tabular-nums;font-size:12px;font-weight:750;color:#d1e3da}
+.progress-footer p{font-size:13px;color:#a7c0b3;line-height:1.55;margin-bottom:14px}
+.progress-footer a{color:var(--mint);text-decoration:none;font-weight:700}
+@media(max-width:430px){.bottom-nav{gap:0;padding-left:4px;padding-right:4px}.bottom-nav button{min-width:0;max-width:none;padding:6px 1px;font-size:9px}.bottom-nav button span{font-size:21px}.bottom-nav .add-tab span{padding:3px 11px}.progress-weight,.progress-week-card,.progress-footer{padding:14px}.progress-week-controls span{min-width:112px;font-size:11px}.progress-stat{padding:12px}.progress-stat strong{font-size:18px}}
