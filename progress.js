@@ -78,6 +78,103 @@ function trainingPanel(model,week){
  return '<section class="card training-card"><div class="eyebrow">SWIM & STRENGTH</div><h2>Training overview</h2><p class="progress-hint">Read-only from your separate training spreadsheet, for '+shortDate(begin)+' – '+shortDate(end)+'. Apple Health daily active energy already includes workouts, so calories are never added twice.</p>'+
  '<div class="training-stats">'+stats+'</div><h3>Recorded sessions</h3><div class="training-list">'+sessions+'</div>'+lifts+'</section>';
 }
+
+/* Performance Lab: visualise read-only training records; never estimate a 1RM. */
+function performanceExerciseGroups(rows){
+ const groups=new Map();
+ for(const r of (Array.isArray(rows)?rows:[])){
+  const name=String(r.exercise||'').trim().replace(/\s+/g,' ');
+  const basis=String(r.loadBasis||'Not specified').trim().replace(/\s+/g,' ')||'Not specified';
+  const load=Number(r.loadKg);
+  if(!name||!r.date||!Number.isFinite(load)||load<=0)continue;
+  const key=name.toLowerCase()+'|'+basis.toLowerCase();
+  if(!groups.has(key))groups.set(key,{key,name,basis,records:[]});
+  groups.get(key).records.push({...r,loadKg:load});
+ }
+ return Array.from(groups.values()).map(g=>{
+  const dates=new Map();
+  for(const r of g.records)if(!dates.has(r.date)||dates.get(r.date).loadKg<r.loadKg)dates.set(r.date,r);
+  g.days=Array.from(dates.values()).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));return g;
+ }).sort((a,b)=>b.days.length-a.days.length||a.name.localeCompare(b.name));
+}
+const perfDate=s=>localDate(s).toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'2-digit'});
+const perfPace=min=>{const sec=Math.round(min*60);return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');};
+function perfChart(records,kind,unit,title){
+ if(!records.length)return '<div class="perf-empty">No measurements recorded for this chart.</div>';
+ const w=350,h=176,L=47,R=15,T=19,B=31;
+ const vals=records.map(x=>Number(x.value)),small=Math.min(...vals),big=Math.max(...vals);
+ const pad=Math.max((big-small)*.24,big*.10,unit==='pace'?.1:1);
+ const min=kind==='bar'?0:Math.max(0,small-pad),max=Math.max(min+.1,big+pad);
+ const x=i=>L+(records.length===1?.5:i/(records.length-1))*(w-L-R);
+ const y=value=>T+(max-value)/(max-min)*(h-T-B);
+ const fmtY=v=>unit==='m'?fmt(Math.round(v)):unit==='pace'?v.toFixed(1):fmt(Number(v.toFixed(1)));
+ const fmtVal=v=>unit==='pace'?perfPace(v)+' /100m':fmt(v)+' '+unit;
+ const grid=[0,.5,1].map(q=>{const yy=T+q*(h-T-B);return '<line x1="'+L+'" y1="'+yy.toFixed(1)+'" x2="'+(w-R)+'" y2="'+yy.toFixed(1)+'" stroke="var(--line)" stroke-dasharray="3 5"/><text x="'+(L-6)+'" y="'+(yy+4).toFixed(1)+'" fill="var(--muted)" font-size="10" text-anchor="end">'+fmtY(max-q*(max-min))+'</text>';}).join('');
+ let plot='';
+ if(kind==='bar'){
+  const width=Math.min(27,(w-L-R)/records.length*.58);
+  plot=records.map((r,i)=>{const xx=x(i)-width/2,yy=y(r.value);return '<rect x="'+xx.toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+width.toFixed(1)+'" height="'+Math.max(1,h-B-yy).toFixed(1)+'" rx="4" fill="var(--mint)"><title>'+esc(r.date)+' · '+fmtVal(r.value)+'</title></rect>';}).join('');
+ }else{
+  const points=records.map((r,i)=>[x(i),y(r.value)]);
+  const d=points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  plot='<path d="'+d+'" fill="none" stroke="var(--mint)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'+
+    points.map((p,i)=>'<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="4.3" stroke="var(--surface)" stroke-width="2" fill="var(--mint)"><title>'+esc(records[i].date)+' · '+fmtVal(records[i].value)+'</title></circle>').join('');
+ }
+ const labels='<text x="'+L+'" y="'+(h-5)+'" fill="var(--muted)" font-size="10">'+perfDate(records[0].date)+'</text>'+
+ (records.length>1?'<text x="'+(w-R)+'" y="'+(h-5)+'" text-anchor="end" fill="var(--muted)" font-size="10">'+perfDate(records.at(-1).date)+'</text>':'');
+ return '<svg class="perf-chart" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+esc(title)+' with '+records.length+' recorded measurements" xmlns="http://www.w3.org/2000/svg">'+grid+plot+labels+'</svg>';
+}
+function perfStats(items){
+ return '<div class="perf-stats">'+items.map(x=>'<div class="perf-stat"><small>'+esc(x[0])+'</small><strong>'+esc(x[1])+'</strong><span>'+esc(x[2])+'</span></div>').join('')+'</div>';
+}
+function perfGym(training,selectedKey){
+ const groups=performanceExerciseGroups(training.strength);
+ if(!groups.length)return '<div class="perf-empty">No weighted exercises have been recorded yet. Log a gym session in chat and refresh your connected tracker.</div>';
+ const g=groups.find(x=>x.key===selectedKey)||groups[0],all=g.days,first=all[0],last=all.at(-1);
+ const options=groups.map(x=>'<option value="'+esc(x.key)+'"'+(x.key===g.key?' selected':'')+'>'+esc(x.name+' · '+x.basis)+'</option>').join('');
+ const difference=last.loadKg-first.loadKg;
+ const stats=perfStats([
+  ['Latest load',fmt(last.loadKg)+' kg',perfDate(last.date)],
+  ['Highest logged',fmt(Math.max(...all.map(x=>x.loadKg)))+' kg','Same exercise and load basis'],
+  ['Since first record',all.length>1?(difference>0?'+':'')+fmt(difference)+' kg':'—',all.length+' dated records']
+ ]);
+ const history=all.slice(-4).reverse().map(r=>'<div class="perf-row"><span>'+perfDate(r.date)+'</span><strong>'+fmt(r.loadKg)+' kg</strong><span>'+((r.reps!=null&&Number.isFinite(Number(r.reps)))?fmt(r.reps)+' reps':'Reps not recorded')+'</span></div>').join('');
+ const recent=all.slice(-12).map(x=>({date:x.date,value:x.loadKg}));
+ return '<div class="perf-select"><label for="performanceExercise">Exercise and load basis</label><select id="performanceExercise" class="control">'+options+'</select></div>'+stats+
+ '<div class="perf-graph-head"><h3>Recorded working loads</h3><span>Last '+recent.length+' dates</span></div>'+
+ perfChart(recent,'line','kg',g.name+' working loads')+
+ '<div class="perf-history"><h3>Recent entries</h3>'+history+'</div>'+
+ '<p class="perf-note">This compares recorded weights, not estimated one-rep maxes. '+esc(g.basis)+' loads are shown exactly as logged. Dumbbells are per dumbbell where stated; machine stacks can differ between gyms. If several loads exist on a date, the highest is plotted.</p>';
+}
+function perfSwim(training){
+ const rows=(Array.isArray(training.swims)?training.swims:[])
+  .filter(x=>x.date&&Number.isFinite(Number(x.distanceM))&&Number(x.distanceM)>0)
+  .sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+ if(!rows.length)return '<div class="perf-empty">No swimming sessions recorded yet. Log a swim through chat and refresh your tracker.</div>';
+ const total=rows.reduce((n,x)=>n+Number(x.distanceM),0),recent=rows.slice(-12);
+ const pace=recent.filter(x=>Number.isFinite(Number(x.durationMin))&&Number(x.durationMin)>0)
+  .map(x=>({date:x.date,value:Number(x.durationMin)*100/Number(x.distanceM)}));
+ const history=rows.slice(-4).reverse().map(x=>'<div class="perf-row"><span>'+perfDate(x.date)+'</span><strong>'+fmt(x.distanceM)+' m</strong><span>'+esc(x.type||x.setting||'Swim')+'</span></div>').join('');
+ return perfStats([['Swims logged',String(rows.length),'Recorded sessions'],['Distance logged',fmt(total/1000)+' km','All recorded swims'],['Longest session',fmt(Math.max(...rows.map(x=>Number(x.distanceM))))+' m','Not necessarily continuous']])+
+ '<div class="perf-graph-head"><h3>Distance per swim</h3><span>Last '+recent.length+' sessions</span></div>'+
+ perfChart(recent.map(x=>({date:x.date,value:Number(x.distanceM)})),'bar','m','Swim distance per session')+
+ '<div class="perf-graph-head perf-subhead"><h3>Elapsed pace</h3><span>Minutes / 100 m</span></div>'+
+ perfChart(pace,'line','pace','Elapsed minutes per 100 metres')+
+ '<p class="perf-note">Elapsed pace includes any rests and drills. It is not race pace and cannot reliably compare speed across different session types.</p>'+
+ '<div class="perf-history"><h3>Recent swims</h3>'+history+'</div>';
+}
+function performanceLab(model){
+ const training=model.training||{};
+ const has=['swims','gyms','strength'].some(k=>Array.isArray(training[k])&&training[k].length);
+ const tab=model.performanceTab==='swim'?'swim':'gym';
+ const head='<section class="card performance-lab" aria-labelledby="performanceTitle"><div class="perf-head"><div><div class="eyebrow">PERFORMANCE LAB</div><h2 id="performanceTitle">Your training progress</h2></div><span class="perf-tag">READ-ONLY</span></div><p class="progress-hint">From your existing training spreadsheet. Log workouts through chat, then view the trends here.</p>';
+ if(!has)return head+'<div class="perf-empty">Connect your Swim & Strength tracker in Settings and tap Refresh now to unlock these charts.</div></section>';
+ const tabs='<div class="perf-tabs" role="tablist" aria-label="Training progress view">'+
+ '<button type="button" role="tab" data-performance-tab="gym" aria-selected="'+(tab==='gym')+'" class="'+(tab==='gym'?'selected':'')+'">Gym</button>'+
+ '<button type="button" role="tab" data-performance-tab="swim" aria-selected="'+(tab==='swim')+'" class="'+(tab==='swim'?'selected':'')+'">Swimming</button></div>';
+ return head+tabs+'<div role="tabpanel" aria-label="'+(tab==='gym'?'Gym progress':'Swimming progress')+'">'+(tab==='gym'?perfGym(training,model.performanceExercise):perfSwim(training))+'</div></section>';
+}
+
 function display(model){
  const m=summarize(model);
  const title=shortDate(m.dates[0])+' – '+shortDate(m.dates[6]);
@@ -105,8 +202,9 @@ function display(model){
  '<div class="progress-stats">'+summaryCards+'</div>'+
  '<section class="card progress-week-card"><div class="progress-card-head"><div><h2>Daily calorie intake</h2><p class="progress-subtitle">Compared with your '+fmt(base)+' kcal base target</p></div><span class="progress-meta">'+m.loggedDays+'/7 days</span></div>'+
  '<div class="progress-day-chart">'+bars+'</div><p class="progress-hint">Missing days are not counted as zero. Averages use only logged days; incomplete days may still underestimate intake. Calorie targets are not measures of energy expenditure or body-fat change.</p></section>'+
- trainingPanel(model,m)+
+ performanceLab(model)+
+  trainingPanel(model,m)+
  '<section class="card progress-footer"><div class="eyebrow">KEEP IT SIMPLE</div><h2>Log your weight in chat</h2><p>Whenever you weigh yourself, tell ChatGPT the number and date. It will be saved to your private Weight Log and appear here after Fuel Lab syncs.</p><a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer">Open ChatGPT to log a weigh-in ↗</a></section>';
 }
-window.FuelProgress={summarize,display,weekDates};
+window.FuelProgress={summarize,display,weekDates,performanceExerciseGroups,performanceLab};
 })();
