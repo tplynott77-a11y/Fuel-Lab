@@ -49,6 +49,9 @@
       <div class="section-title"><h2>Food library</h2><span id="foodCount"></span></div>
       <div id="foodList"></div>
     </section>
+    <section class="screen hidden" id="screen-progress">
+      <div id="progressContent" aria-live="polite"></div>
+    </section>
     <section class="screen hidden" id="screen-settings">
       <div class="eyebrow">YOUR CONTROL PANEL</div><h1>Settings & backup.</h1><p class="helper">Your diary remains saved on this device. With your approval, Fuel Lab reads meals that ChatGPT has logged to your private Google Sheet.</p>
       <div class="card form-card sync-card" id="syncSettings">
@@ -73,11 +76,11 @@
 <p class="small-note">Apple Health's Move calories include both exercise and ordinary movement. Leaving the baseline blank keeps your 2,470 kcal goal unchanged while still showing activity data. Do not add workout calories twice.</p>
 </div><button type="submit" class="secondary">Save targets</button></form></div>
       <div class="card form-card"><h2>Your data stays yours</h2><p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser storage can be erased if the app or its website data is removed.</p><button class="secondary" id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup file</label><input id="importInput" type="file" accept="application/json,.json" hidden /></div>
-      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.3 · APPLE HEALTH SHORTCUTS READY</p></div>
+      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.4 · PROGRESS & WEEKLY TRENDS</p></div>
     </section>
   </main>
-  <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
+  <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="progress"><span>↗</span>Progress</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
   <div id="toast" role="status" aria-live="polite"></div>
 </div>
-<script src="food-core.js"></script><script src="app.js"></script><script src="https://accounts.google.com/gsi/client" async defer></script><script src="sync.js"></script>
+<script src="food-core.js"></script><script src="progress.js"></script><script src="app.js"></script><script src="https://accounts.google.com/gsi/client" async defer></script><script src="sync.js"></script>
 </body></html>
