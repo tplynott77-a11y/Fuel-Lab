@@ -47,10 +47,10 @@ function weightChart(weights){
  const y=v=>p.t+(hi-v)/(hi-lo)*(h-p.t-p.b);
  const points=weights.map((q,i)=>[x(i),y(q.kg)]);
  const line=points.map((q,i)=>(i===0?'M':'L')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ');
- const dotted=[0,.5,1].map(i=>{const yy=p.t+i*(h-p.t-p.b);return '<line x1="'+p.l+'" y1="'+yy+'" x2="'+(w-p.r)+'" y2="'+yy+'" stroke="#3b5554" stroke-dasharray="3 5"/><text x="'+(p.l-5)+'" y="'+(yy+4)+'" fill="#a5c4b7" font-size="10" text-anchor="end">'+(hi-(hi-lo)*i).toFixed(1)+'</text>'}).join('');
- const circles=points.map((pt,i)=>'<circle cx="'+pt[0].toFixed(1)+'" cy="'+pt[1].toFixed(1)+'" r="'+(i===points.length-1?4.5:3)+'" fill="#b6f0c6"><title>'+esc(weights[i].date)+' · '+fmt(weights[i].kg)+' kg</title></circle>').join('');
- return '<svg class="progress-weight-graph" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Weight history over '+weights.length+' measurements" xmlns="http://www.w3.org/2000/svg">'+dotted+'<path d="'+line+'" fill="none" stroke="#9be6b7" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+circles+
- '<text x="'+p.l+'" y="'+(h-3)+'" fill="#a5c4b7" font-size="10">'+shortDate(weights[0].date)+'</text><text x="'+(w-p.r)+'" y="'+(h-3)+'" fill="#a5c4b7" font-size="10" text-anchor="end">'+shortDate(weights.at(-1).date)+'</text></svg>';
+ const dotted=[0,.5,1].map(i=>{const yy=p.t+i*(h-p.t-p.b);return '<line x1="'+p.l+'" y1="'+yy+'" x2="'+(w-p.r)+'" y2="'+yy+'" stroke="var(--line)" stroke-dasharray="3 5"/><text x="'+(p.l-5)+'" y="'+(yy+4)+'" fill="var(--muted)" font-size="10" text-anchor="end">'+(hi-(hi-lo)*i).toFixed(1)+'</text>'}).join('');
+ const circles=points.map((pt,i)=>'<circle cx="'+pt[0].toFixed(1)+'" cy="'+pt[1].toFixed(1)+'" r="'+(i===points.length-1?4.5:3)+'" fill="var(--mint)"><title>'+esc(weights[i].date)+' · '+fmt(weights[i].kg)+' kg</title></circle>').join('');
+ return '<svg class="progress-weight-graph" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Weight history over '+weights.length+' measurements" xmlns="http://www.w3.org/2000/svg">'+dotted+'<path d="'+line+'" fill="none" stroke="var(--mint)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'+circles+
+ '<text x="'+p.l+'" y="'+(h-3)+'" fill="var(--muted)" font-size="10">'+shortDate(weights[0].date)+'</text><text x="'+(w-p.r)+'" y="'+(h-3)+'" fill="var(--muted)" font-size="10" text-anchor="end">'+shortDate(weights.at(-1).date)+'</text></svg>';
 }
 function display(model){
  const m=summarize(model);
