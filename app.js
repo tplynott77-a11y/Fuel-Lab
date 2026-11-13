@@ -17,6 +17,8 @@ function applyTheme(value){
  document.documentElement.style.colorScheme=mode;
  const meta=document.querySelector('meta[name="theme-color"]');
  if(meta)meta.setAttribute('content',mode==='light'?'#edf4fc':'#0b121d');
+ const iosBar=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+ if(iosBar)iosBar.setAttribute('content',mode==='light'?'default':'black-translucent');
  try{localStorage.setItem('fuel-lab-theme',mode);}catch(_){}
  const selector=$('#themeSelect');
  if(selector)selector.value=mode;
