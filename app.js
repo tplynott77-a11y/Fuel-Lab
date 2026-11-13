@@ -9,7 +9,7 @@ const today=()=>dayString(new Date());
 const dateObject=d=>new Date(d+'T12:00:00');
 const uid=()=>window.crypto?.randomUUID?.()||'local-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
 let db;
-let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[],activity:[],weights:[],progressWeekOffset:0,training:{swims:[],gyms:[],strength:[]}};
+let state={foods:[],entries:[],prefs:{id:'settings',kcal:2470,protein:160,carbs:270,fat:80},date:today(),screen:'today',parsed:[],activity:[],weights:[],progressWeekOffset:0,performanceTab:'gym',performanceExercise:'',training:{swims:[],gyms:[],strength:[]}};
 function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3600);}
 function applyTheme(value){
  const mode=value==='dark'?'dark':'light';
@@ -87,7 +87,7 @@ async function firstRun(){const seeded=await op('prefs','get','starter-seeded');
 const meals=['Breakfast','Lunch','Dinner','Snacks'];
 function nav(screen){state.screen=screen;$$('.screen').forEach(x=>x.classList.toggle('hidden',x.id!=='screen-'+screen));$$('.bottom-nav button').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));window.scrollTo({top:0,behavior:'instant'});render();}
 function render(){renderDiary();renderActivity();renderProgress();renderPicker();renderFoods();renderSettings();renderParsed();}
-function renderProgress(){if(!window.FuelProgress)return;$('#progressContent').innerHTML=window.FuelProgress.display({entries:state.entries,activity:state.activity,weights:state.weights,prefs:state.prefs,today:today(),offset:state.progressWeekOffset,training:state.training});}
+function renderProgress(){if(!window.FuelProgress)return;$('#progressContent').innerHTML=window.FuelProgress.display({entries:state.entries,activity:state.activity,weights:state.weights,prefs:state.prefs,today:today(),offset:state.progressWeekOffset,training:state.training,performanceTab:state.performanceTab,performanceExercise:state.performanceExercise});}
 
 function activeForDay(date){return state.activity.find(x=>x.date===date&&x.kind==='Daily Active')||null;}
 function adjustmentForDay(date){
@@ -135,7 +135,15 @@ await reload();render();toast('Local backup restored.');}
 function attach(){ $$('.bottom-nav button').forEach(el=>el.addEventListener('click',()=>nav(el.dataset.screen)));
 $('#prevDate').addEventListener('click',()=>{const d=dateObject(state.date);d.setDate(d.getDate()-1);state.date=dayString(d);render();});
 $('#nextDate').addEventListener('click',()=>{const d=dateObject(state.date);d.setDate(d.getDate()+1);state.date=dayString(d);render();});
-$('#progressContent').addEventListener('click',e=>{if(e.target.closest('#weekPrev')){state.progressWeekOffset--;renderProgress();}if(e.target.closest('#weekNext')){state.progressWeekOffset=Math.min(0,state.progressWeekOffset+1);renderProgress();}});
+$('#progressContent').addEventListener('click',e=>{
+ const tab=e.target.closest('[data-performance-tab]');
+ if(tab){state.performanceTab=tab.dataset.performanceTab==='swim'?'swim':'gym';renderProgress();return;}
+ if(e.target.closest('#weekPrev')){state.progressWeekOffset--;renderProgress();return;}
+ if(e.target.closest('#weekNext')){state.progressWeekOffset=Math.min(0,state.progressWeekOffset+1);renderProgress();}
+});
+$('#progressContent').addEventListener('change',e=>{
+ if(e.target.id==='performanceExercise'){state.performanceExercise=e.target.value;renderProgress();}
+});
 $('#mealGroups').addEventListener('click',async e=>{const add=e.target.closest('[data-add-meal]');if(add){$('#quickMeal').value=add.dataset.addMeal;$('#pickerMeal').value=add.dataset.addMeal;nav('add');return;}const del=e.target.closest('[data-delete-entry]');if(del&&state.entries.some(x=>x.id===del.dataset.deleteEntry&&x.origin==='google-sheets'))return toast('Ask ChatGPT to delete this saved Google Sheets entry.');if(del&&confirm('Remove this food entry?')){await op('entries','delete',del.dataset.deleteEntry);await reload();render();toast('Entry removed.');}});
 $('#parseBtn').addEventListener('click',()=>{state.parsed=parseText($('#quickText').value,state.foods);renderParsed();if(!state.parsed.length)toast('Describe the food you ate first.');});
 $('#parseResults').addEventListener('change',e=>{const el=e.target.closest('[data-quantity]');if(!el)return;const matches=state.parsed.filter(x=>x.matched);const target=matches[Number(el.dataset.quantity)];const qty=Number(el.value);if(target&&qty>0&&qty<=1000){target.qty=qty;const results=$('#parseResults');const focus=el.dataset.quantity;const caret=document.activeElement===el;renderParsed();if(caret){const next=results.querySelector(`[data-quantity="${focus}"]`);next?.focus();}}});
