@@ -1,4 +1,14 @@
-# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.7)
+# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.8)
+
+## Performance Lab (v0.8)
+- The **Progress** tab now has an interactive **Performance Lab** with **Gym** and **Swimming** views. The new view reads only the optional Swim & Strength tracker connection established in Settings; no second workout diary.
+- **Gym:** choose a recorded exercise + load basis. View its dated working-load trend, latest and highest recorded weight, change since its first record, and recent rep counts. Each date displays its highest logged load. Barbell, per-dumbbell and machine-stack loads are kept separate. These are **not estimated one-rep maxes**, and machine loads may not be directly comparable between gyms.
+- **Swimming:** distance by recorded session, total recorded distance, longest logged session and elapsed minutes per 100 m where durations exist. Elapsed pace includes rests and drill time, so it is not race pace.
+- Charts and summaries contain only recorded data. No speculative performances, estimated PBs, or extra workout calories. Apple Health daily Move calories still provide the activity total, so training sessions are never counted twice.
+- The Gym/Swimming selection and chosen exercise persist while the app is open, including when food or training data refreshes.
+- Mobile-friendly, offline-capable charts with no external charting library. Private sheet data remains on the device; nothing is committed to GitHub.
+
+
 
 ## Refresh the installed iPhone Home Screen app
 - Scroll to the very bottom of **Settings** and tap **Check for updates & reload**.
