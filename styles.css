@@ -14,7 +14,7 @@
 
 
 /* v0.3 Apple Health daily activity and conservative calorie credit */
-.health-card{border-color:#345a56;background:linear-gradient(135deg,#192e31,#13212d);margin-bottom:21px;padding:18px}
+.health-card{border-color:#345a56;background:linear-gradient(135deg,#192e31,#13212d);margin-top:14px;margin-bottom:21px;padding:18px}
 .health-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .health-head h2{margin:6px 0 0;font-size:19px;letter-spacing:-.35px}
 .health-source{font-size:10px;color:#a0cabc;white-space:nowrap;text-align:right}
