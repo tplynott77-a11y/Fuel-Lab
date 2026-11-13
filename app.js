@@ -146,6 +146,7 @@ $('#foodList').addEventListener('click',async e=>{const del=e.target.closest('[d
 $('#themeSelect').value=document.documentElement.dataset.theme==='dark'?'dark':'light';
 $('#themeSelect').addEventListener('change',e=>applyTheme(e.target.value));
 $('#settingsForm').addEventListener('submit',async e=>{e.preventDefault();const next={id:'settings'};for(const k of ['kcal','protein','carbs','fat']){const v=Number($('#target'+k[0].toUpperCase()+k.slice(1)).value);if(!Number.isFinite(v)||v<=0||v>50000)return toast('Enter valid positive targets.');next[k]=v;}const raw=$('#activityBaseline').value.trim();const baseline=raw===''?null:Number(raw),pct=Number($('#activityCreditPct').value);if((baseline!==null&&(!Number.isFinite(baseline)||baseline<0||baseline>20000))||!Number.isFinite(pct)||pct<0||pct>100)return toast('Check the activity baseline and percentage.');next.activityBaselineKcal=baseline;next.exerciseCreditPct=pct;await op('prefs','put',next);await reload();render();toast('Targets updated.');});
+$('#checkForUpdates').addEventListener('click',checkForAppUpdates);
 $('#exportBtn').addEventListener('click',exportBackup);$('#importInput').addEventListener('change',async e=>{try{await restoreBackup(e.target.files[0]);}catch(err){showError(err)}finally{e.target.value='';}});
 }
 
@@ -232,6 +233,38 @@ async function applyTrainingSnapshot(training){
 }
 window.FuelLabBridge={ready:false,applyRemoteSnapshot,applyActivitySnapshot,applyWeightsSnapshot,applyTrainingSnapshot};
 
+async function checkForAppUpdates(){
+ const button=$('#checkForUpdates'),status=$('#updateStatus');
+ if(!button||button.disabled)return;
+ if(!navigator.onLine){status.textContent='You are offline. Connect to the internet and try again.';return;}
+ button.disabled=true;
+ status.textContent='Checking for the latest version…';
+ try{
+  if('serviceWorker' in navigator&&location.protocol==='https:'){
+   const registration=await navigator.serviceWorker.getRegistration('./');
+   if(registration){
+    await registration.update();
+    const worker=registration.installing||registration.waiting;
+    if(worker&&worker.state!=='activated'){
+     await new Promise(resolve=>{
+      let finished=false;
+      const done=()=>{if(!finished){finished=true;resolve();}};
+      navigator.serviceWorker.addEventListener('controllerchange',done,{once:true});
+      setTimeout(done,4000);
+     });
+    }
+   }else await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+  }
+  status.textContent='Refreshing Fuel Lab…';
+  const url=new URL(location.href);
+  url.searchParams.set('app-refresh',String(Date.now()));
+  location.replace(url.href);
+ }catch(error){
+  console.warn('Fuel Lab update:',error);
+  status.textContent='Could not check for updates. Please try again while connected.';
+  button.disabled=false;
+ }
+}
 function showError(err){console.error('Fuel Lab:',err);toast('Could not save that change. Check device storage and try again.');}
 async function init(){try{await ensureDb();await firstRun();attach();render();window.FuelLabBridge.ready=true;window.dispatchEvent(new Event('fuel-lab-ready'));if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(console.warn);}catch(e){console.error(e);$('#app').innerHTML='<main style="padding:45px 20px"><h1>Local storage unavailable</h1><p>Fuel Lab could not open its local diary. Try opening it from its HTTPS web address in Safari rather than a local file or private browsing window.</p><p>No information was uploaded.</p></main>';}}
 init();
