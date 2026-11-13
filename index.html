@@ -70,6 +70,11 @@
         <p class="helper">Tell ChatGPT what you ate. It updates your private spreadsheet, and Fuel Lab imports those entries on return to the app. Local entries are never uploaded.</p>
         <label for="syncSheetId">Your private Google Sheets link</label>
         <input class="control" id="syncSheetId" autocomplete="off" spellcheck="false" placeholder="Paste the private Fuel Lab sheet link" />
+        <div class="training-link-box"><label for="trainingSheetId">Swim & Strength tracker (optional)</label>
+          <input class="control" id="trainingSheetId" autocomplete="off" spellcheck="false" placeholder="Paste the separate training spreadsheet link" />
+          <p class="small-note">Uses the same read-only Google sign-in. Your tracker stays private; Fuel Lab only displays recorded sessions.</p>
+          <div class="training-sync-status" id="trainingStatus" aria-live="polite">Not connected. Your existing training sheet is unchanged.</div>
+        </div>
         <div class="sync-actions">
           <button type="button" class="primary" id="syncConnect">Connect Google</button>
           <button type="button" class="secondary" id="syncNow">Refresh now</button>
@@ -87,7 +92,7 @@
 <p class="small-note">Apple Health's Move calories include both exercise and ordinary movement. Leaving the baseline blank keeps your 2,470 kcal goal unchanged while still showing activity data. Do not add workout calories twice.</p>
 </div><button type="submit" class="secondary">Save targets</button></form></div>
       <div class="card form-card"><h2>Your data stays yours</h2><p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser storage can be erased if the app or its website data is removed.</p><button class="secondary" id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup file</label><input id="importInput" type="file" accept="application/json,.json" hidden /></div>
-      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.5 · CLOUD BLUE</p></div>
+      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.6 · CLOUD BLUE + TRAINING</p></div>
     </section>
   </main>
   <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="progress"><span>↗</span>Progress</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
