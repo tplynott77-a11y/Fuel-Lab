@@ -64,10 +64,12 @@ function display(model){
  return '<div class="progress-day"><div class="progress-day-label">'+dayLabel(d.date)+'</div><div class="progress-day-track">'+(d.foods?'<div class="progress-day-fill" style="width:'+Math.min(100,pct).toFixed(1)+'%"></div>':'<span class="progress-day-missing">Not logged</span>')+'<span class="progress-target-mark"></span></div><div class="progress-day-num">'+(d.foods?fmt(d.calories):'—')+'</div></div>';
  }).join('');
  const summaryCards=[
- ['Avg daily intake',m.calorieAvg===null?'—':fmt(m.calorieAvg)+' kcal',m.loggedDays+' of 7 days logged'],
+ ['Total logged intake',m.loggedDays?fmt(m.calories)+' kcal':'—','From '+m.loggedDays+' days with entries'],
+ ['Avg daily intake',m.calorieAvg===null?'—':fmt(m.calorieAvg)+' kcal','Over '+m.loggedDays+' logged day'+(m.loggedDays===1?'':'s')],
  ['Avg daily protein',m.proteinAvg===null?'—':fmt(m.proteinAvg)+' g','On days with food entries'],
  ['Active energy',m.activityDays?fmt(m.activeCalories)+' kcal':'—',m.activityDays+' of 7 days recorded'],
- ['Exercise time',m.exerciseMinutes===null?'—':fmt(m.exerciseMinutes)+' min',m.exerciseDays+' of 7 days recorded']
+ ['Exercise time',m.exerciseMinutes===null?'—':fmt(m.exerciseMinutes)+' min',m.exerciseDays+' of 7 days recorded'],
+ ['Weigh-ins this week',String(m.weekWeights.length),'Measurements saved']
  ].map(c=>'<div class="progress-stat"><small>'+c[0]+'</small><strong>'+c[1]+'</strong><span>'+c[2]+'</span></div>').join('');
  return '<div class="eyebrow">LONG-TERM FUEL</div><h1>Progress & trends.</h1><p class="helper">Weight, weekly nutrition and Apple Health activity together. Based only on what you actually recorded.</p>'+
  '<section class="card progress-weight"><div class="progress-card-head"><div><div class="eyebrow">WEIGHT TRACKING</div><h2>Weight trend</h2></div><span class="progress-meta">'+(weight?'Latest · '+shortDate(weight.date):'No entries yet')+'</span></div>'+
