@@ -93,7 +93,14 @@
 <p class="small-note">Apple Health's Move calories include both exercise and ordinary movement. Leaving the baseline blank keeps your 2,470 kcal goal unchanged while still showing activity data. Do not add workout calories twice.</p>
 </div><button type="submit" class="secondary">Save targets</button></form></div>
       <div class="card form-card"><h2>Your data stays yours</h2><p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser storage can be erased if the app or its website data is removed.</p><button class="secondary" id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup file</label><input id="importInput" type="file" accept="application/json,.json" hidden /></div>
-      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.6 · CLOUD BLUE + TRAINING</p></div>
+      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.7 · EASY UPDATES</p></div>
+      <section class="card form-card app-update-card" aria-labelledby="updatesTitle">
+        <div class="eyebrow">APP MAINTENANCE</div><h2 id="updatesTitle">Updates & refresh</h2>
+        <p class="helper">Using Fuel Lab from your Home Screen? Check for the latest version and reload it here, without clearing your food diary or app settings.</p>
+        <button class="primary" type="button" id="checkForUpdates">↻ Check for updates & reload</button>
+        <p class="small-note">Requires internet. Your Google Sheet link stays saved, but you might need to sign in again after reloading.</p>
+        <p class="update-status" id="updateStatus" role="status" aria-live="polite"></p>
+      </section>
     </section>
   </main>
   <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="progress"><span>↗</span>Progress</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
