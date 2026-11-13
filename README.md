@@ -1,4 +1,4 @@
-# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.4)
+# Fuel Lab — ChatGPT, Apple Health and Progress dashboard (v0.5)
 
 A personal iPhone app powered by ChatGPT conversations and a private Google Sheet. No extra OpenAI API billing.
 
@@ -9,6 +9,13 @@ A personal iPhone app powered by ChatGPT conversations and a private Google Shee
 4. Fuel Lab will refresh automatically when you return to it, reconnect to the internet, or every two minutes while visible and authorised. **Refresh now** is available too.
 
 **Limitations:** Google browser OAuth tokens expire; the app does not persist tokens. When the app is terminated or a token expires, tap **Connect Google** again. iOS doesn't permit reliable periodic background sync when the app is closed.
+
+## Appearance and chat-first home screen (v0.5)
+- **Cloud Blue (light)** is the new default appearance, with brighter surfaces, blue accents and clearer chart contrast.
+- Change theme any time under **Settings → Appearance → Colour theme** to choose **Cloud Blue · Light** or **Classic Dark · Original**. The selection is stored on this device and does not touch private diary data.
+- The home dashboard includes an **Open ChatGPT** shortcut. ChatGPT is the primary interface for logging meals and corrections; Fuel Lab reads the private Google Sheet and visualises your data.
+- The progress weight graph follows the selected colour theme.
+- The v0.5 service worker refreshes app assets. Existing IndexedDB data and Google sign-in settings are not cleared.
 
 ## Progress tab — weight and weekly summaries (v0.4)
 
