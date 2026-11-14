@@ -16,7 +16,7 @@ function applyTheme(value){
  document.documentElement.dataset.theme=mode;
  document.documentElement.style.colorScheme=mode;
  const meta=document.querySelector('meta[name="theme-color"]');
- if(meta)meta.setAttribute('content',mode==='light'?'#edf4fc':'#0b121d');
+ if(meta)meta.setAttribute('content',mode==='light'?'#d8eaff':'#19302c');
  const iosBar=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
  if(iosBar)iosBar.setAttribute('content',mode==='light'?'default':'black-translucent');
  try{localStorage.setItem('fuel-lab-theme',mode);}catch(_){}

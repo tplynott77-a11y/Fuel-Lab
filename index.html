@@ -4,14 +4,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#edf4fc" />
+  <meta name="theme-color" content="#d8eaff" />
   <script>
     (function () {
       let mode = 'light';
       try { const saved = localStorage.getItem('fuel-lab-theme'); if (saved === 'light' || saved === 'dark') mode = saved; } catch (_) { }
       document.documentElement.dataset.theme = mode;
       document.documentElement.style.colorScheme = mode;
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', mode === 'light' ? '#edf4fc' : '#0b121d');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', mode === 'light' ? '#d8eaff' : '#19302c');
       // iOS Home Screen apps need an internal scroll container to avoid status-bar bleed.
       if (navigator.standalone === true) document.documentElement.classList.add('ios-standalone');
     })();

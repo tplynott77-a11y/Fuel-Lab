@@ -237,3 +237,20 @@ html[data-theme="light"] .chat-first a{color:#fff}
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* iPhone Home Screen: match the status-bar strip to the top of Fuel Lab's gradient.
+   Avoid relying solely on safe-area insets: iOS may report them as zero. */
+html[data-theme="light"] { background-color: #d8eaff; }
+html[data-theme="dark"] { background-color: #19302c; }
+
+@media (max-width: 550px) {
+  html.ios-standalone .bottom-nav {
+    padding-bottom: max(34px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+
+  html.ios-standalone #app {
+    padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px));
+  }
+}
