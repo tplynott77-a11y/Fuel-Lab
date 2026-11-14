@@ -12,6 +12,8 @@
       document.documentElement.dataset.theme = mode;
       document.documentElement.style.colorScheme = mode;
       document.querySelector('meta[name="theme-color"]').setAttribute('content', mode === 'light' ? '#edf4fc' : '#0b121d');
+      // iOS Home Screen apps need an internal scroll container to avoid status-bar bleed.
+      if (navigator.standalone === true) document.documentElement.classList.add('ios-standalone');
     })();
   </script>
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -251,7 +253,8 @@
         </section>
       </section>
     </main>
-    <nav class="bottom-nav" aria-label="Main navigation">
+  </div>
+  <nav class="bottom-nav" aria-label="Main navigation">
       <button data-screen="today" class="active">
         <span>◉</span>
         Diary
@@ -291,7 +294,6 @@
 
     </nav>
     <div id="toast" role="status" aria-live="polite"></div>
-  </div>
   <script src="food-core.js"></script>
   <script src="progress.js"></script>
   <script src="app.js"></script>

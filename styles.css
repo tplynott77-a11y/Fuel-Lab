@@ -217,3 +217,23 @@ html[data-theme="light"] .chat-first a{color:#fff}
  .perf-row strong{font-size:11px}
  .perf-head h2{font-size:19px}
 }
+
+/* Installed iPhone app: keep the document still while #app scrolls.
+   Otherwise iOS 26 can composite scrolling page text behind its status bar. */
+@media (max-width: 550px) {
+  html.ios-standalone,
+  html.ios-standalone body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html.ios-standalone #app {
+    height: 100%;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
