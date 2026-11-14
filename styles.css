@@ -217,8 +217,3 @@ html[data-theme="light"] .chat-first a{color:#fff}
  .perf-row strong{font-size:11px}
  .perf-head h2{font-size:19px}
 }
-@media (max-width: 550px) {
-    #app {
-        padding-top: calc(env(safe-area-inset-top) + 8px);
-    }
-}
