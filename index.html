@@ -1,110 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#edf4fc" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<script>
-(function(){
-  let mode='light';
-  try {const saved=localStorage.getItem('fuel-lab-theme'); if(saved==='light'||saved==='dark')mode=saved;}catch(_){}
-  document.documentElement.dataset.theme=mode;
-  document.documentElement.style.colorScheme=mode;
-  document.querySelector('meta[name="theme-color"]').setAttribute('content',mode==='light'?'#edf4fc':'#0b121d');
-  document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content',mode==='light'?'default':'black-translucent');
-})();
-</script>
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="Fuel Lab" />
-<meta name="description" content="A ChatGPT-connected nutrition and training dashboard with private Google Sheets sync." />
-<link rel="manifest" href="manifest.webmanifest" />
-<link rel="apple-touch-icon" href="icons/icon-192.png" />
-<link rel="icon" href="icons/icon-192.png" />
-<link rel="stylesheet" href="styles.css" />
-<title>Fuel Lab — ChatGPT-Connected Nutrition Diary</title>
-</head>
-<body>
-<div id="app">
-  <header class="top"><div class="brand"><span class="logo">F<span>✦</span></span><div><b>FUEL LAB</b><small>PERSONAL NUTRITION JOURNAL</small></div></div><div class="offline-pill" id="syncPill"><span class="status-dot"></span> LOCAL DIARY</div></header>
-  <main>
-    <section class="screen" id="screen-today">
-      <div class="welcome"><div class="eyebrow">TODAY'S FUEL</div><h1>Build better days.</h1><p>A simple record of what you eat. Your food, your numbers, your control.</p></div>
-      <section class="chat-first card" aria-label="Log food in ChatGPT"><div><div class="eyebrow">CHAT-FIRST LOGGING</div><h2>Tell ChatGPT what you ate.</h2><p>Your conversation is the food log interface. Fuel Lab shows the results after Google Sheets syncs.</p></div><a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer">Open ChatGPT ↗</a></section>
-      <div class="sync-summary" id="syncSummary" aria-live="polite">Your food diary is saved locally. Connect Google Sheets in Settings for ChatGPT entries.</div>
-      <div class="date-nav"><button class="circle-button" id="prevDate" aria-label="Previous day">‹</button><div class="date-label" id="dateLabel">Today</div><button class="circle-button" id="nextDate" aria-label="Next day">›</button></div>
-      <div class="hero card"><div class="cal-ring" id="calRing"><div class="cal-center"><strong id="calConsumed">0</strong><span>of <b id="calTarget">2470</b> kcal</span></div></div><div class="cal-aside"><div class="eyebrow">DAILY BALANCE</div><div class="remaining" id="calRemaining">2,470</div><p id="balanceLabel">kcal remaining</p><div class="tiny">Based on the targets you set. Estimates are not exact measurements.</div></div></div>
-      <div class="macro-grid" id="macroGrid"></div>
 
-      <section class="card health-card" aria-labelledby="healthTitle">
-        <div class="health-head"><div><div class="eyebrow">APPLE HEALTH</div><h2 id="healthTitle">Today's activity</h2></div><span id="activitySource" class="health-source">Awaiting Shortcut</span></div>
-        <div class="health-numbers">
-          <div><small>Move / active energy</small><strong id="activityKcal">—</strong></div>
-          <div><small>Exercise minutes</small><strong id="activityMinutes">—</strong></div>
-          <div><small>Calorie target adjustment</small><strong id="activityCredit">Not configured</strong></div>
-        </div>
-        <p class="health-note" id="activityNote">Active calories include workouts and everyday movement, so they are not automatically added to your base target.</p>
-      </section>
-      <div class="section-title"><h2>Your food diary</h2><span id="entryCount">0 entries</span></div>
-      <div id="mealGroups"></div>
-      <p class="disclaimer">Numbers are estimates. Oils, sauces, serving sizes and preparation methods can change the actual nutrition.</p>
-    </section>
-    <section class="screen hidden" id="screen-add">
-      <div class="eyebrow">QUICK ENTRY</div><h1>Tell me what you ate.</h1><p class="helper">Try “3 eggs and a bagel” or “150g cooked chicken breast”. This first version uses an offline food matcher, not an AI model. You review everything before saving.</p>
-      <div class="card form-card"><label for="quickText">Describe your meal</label><textarea id="quickText" rows="4" placeholder="3 eggs and 1 bagel"></textarea><div class="flex"><label class="inline-label" for="quickMeal">Meal</label><select id="quickMeal" class="control"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option></select></div><button class="primary" id="parseBtn">Review food matches →</button></div>
-      <div id="parseResults"></div>
-      <div class="section-title"><h2>Or choose a saved food</h2></div><div class="card form-card"><label for="foodPicker">Food</label><select id="foodPicker" class="control"></select><div class="flex"><div><label for="foodQty">Servings</label><input id="foodQty" class="control" type="number" min="0.1" max="1000" step="0.1" value="1" /></div><div><label for="pickerMeal">Meal</label><select id="pickerMeal" class="control"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option></select></div></div><div id="pickerNutrition" class="small-note"></div><button class="secondary" id="addSelected">Add food to diary</button></div>
-    </section>
-    <section class="screen hidden" id="screen-foods">
-      <div class="eyebrow">PERSONAL LIBRARY</div><h1>Your saved foods.</h1><p class="helper">The starter foods use illustrative nutrition estimates. Replace them with exact label values when available.</p>
-      <div class="card form-card"><h2>Save a food</h2><form id="foodForm"><label for="newName">Name</label><input class="control" id="newName" required maxlength="90" placeholder="My chicken wrap" /><label for="newPortion">Serving unit</label><input class="control" id="newPortion" required maxlength="50" placeholder="wrap / 100 g / bowl" /><div class="two-col"><div><label for="newKcal">Calories</label><input class="control" id="newKcal" type="number" required min="0" step="0.1" /></div><div><label for="newProtein">Protein (g)</label><input class="control" id="newProtein" type="number" required min="0" step="0.1" /></div><div><label for="newCarbs">Carbs (g)</label><input class="control" id="newCarbs" type="number" required min="0" step="0.1" /></div><div><label for="newFat">Fat (g)</label><input class="control" id="newFat" type="number" required min="0" step="0.1" /></div></div><button type="submit" class="primary">Save to food library</button></form></div>
-      <div class="section-title"><h2>Food library</h2><span id="foodCount"></span></div>
-      <div id="foodList"></div>
-    </section>
-    <section class="screen hidden" id="screen-progress">
-      <div id="progressContent" aria-live="polite"></div>
-    </section>
-    <section class="screen hidden" id="screen-settings">
-      <div class="eyebrow">YOUR CONTROL PANEL</div><h1>Settings & backup.</h1><p class="helper">Your diary remains saved on this device. With your approval, Fuel Lab reads meals that ChatGPT has logged to your private Google Sheet.</p>
-      <section class="card form-card appearance-card"><div class="eyebrow">MAKE IT YOURS</div><h2>Appearance</h2><p class="helper">Cloud Blue is the new light look. You can switch back to the original dark style at any time, without affecting your diary.</p><label for="themeSelect">Colour theme</label><select class="control" id="themeSelect"><option value="light">Cloud Blue · Light</option><option value="dark">Classic Dark · Original</option></select><div class="theme-preview" aria-hidden="true"><span class="swatch-blue"></span><span class="swatch-ice"></span><span class="swatch-navy"></span></div><p class="small-note">Appearance is saved on this device only.</p></section>
-      <div class="card form-card sync-card" id="syncSettings">
-        <div class="eyebrow">PRIVATE GOOGLE SHEETS</div><h2>ChatGPT → Fuel Lab</h2>
-        <p class="helper">Tell ChatGPT what you ate. It updates your private spreadsheet, and Fuel Lab imports those entries on return to the app. Local entries are never uploaded.</p>
-        <label for="syncSheetId">Your private Google Sheets link</label>
-        <input class="control" id="syncSheetId" autocomplete="off" spellcheck="false" placeholder="Paste the private Fuel Lab sheet link" />
-        <div class="training-link-box"><label for="trainingSheetId">Swim & Strength tracker (optional)</label>
-          <input class="control" id="trainingSheetId" autocomplete="off" spellcheck="false" placeholder="Paste the separate training spreadsheet link" />
-          <p class="small-note">Uses the same read-only Google sign-in. Your tracker stays private; Fuel Lab only displays recorded sessions.</p>
-          <div class="training-sync-status" id="trainingStatus" aria-live="polite">Not connected. Your existing training sheet is unchanged.</div>
-        </div>
-        <div class="sync-actions">
-          <button type="button" class="primary" id="syncConnect">Connect Google</button>
-          <button type="button" class="secondary" id="syncNow">Refresh now</button>
-          <button type="button" class="secondary" id="syncDisconnect">Disconnect</button>
-        </div>
-        <div class="sync-state" id="syncStatus" aria-live="polite">Not connected. Your existing diary is safe.</div>
-        <p class="small-note">Automatic on return, when internet reconnects and every two minutes while open—as long as Google sign-in is still active. You may occasionally need to reconnect after a token expires. This app cannot sync while fully closed on iPhone.</p>
-        <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" class="sync-chat-link">Open ChatGPT to log a meal ↗</a>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#edf4fc" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <script>
+    (function () {
+      let mode = 'light';
+      try { const saved = localStorage.getItem('fuel-lab-theme'); if (saved === 'light' || saved === 'dark') mode = saved; } catch (_) { }
+      document.documentElement.dataset.theme = mode;
+      document.documentElement.style.colorScheme = mode;
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', mode === 'light' ? '#edf4fc' : '#0b121d');
+      document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', mode === 'light' ? 'default' : 'black-translucent');
+    })();
+  </script>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Fuel Lab" />
+  <meta name="description"
+    content="A ChatGPT-connected nutrition and training dashboard with private Google Sheets sync." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Fuel Lab — ChatGPT-Connected Nutrition Diary</title>
+</head>
+
+<body>
+  <div id="app">
+    <header class="top">
+      <div class="brand"><span class="logo">F<span>✦</span></span>
+        <div><b>FUEL LAB</b><small>PERSONAL NUTRITION JOURNAL</small></div>
       </div>
-      <div class="card form-card"><h2>Daily targets & activity credit</h2><form id="settingsForm"><div class="two-col"><div><label for="targetKcal">Calories</label><input id="targetKcal" type="number" min="1" required class="control" /></div><div><label for="targetProtein">Protein (g)</label><input id="targetProtein" type="number" min="1" required class="control" /></div><div><label for="targetCarbs">Carbs (g)</label><input id="targetCarbs" type="number" min="1" required class="control" /></div><div><label for="targetFat">Fat (g)</label><input id="targetFat" type="number" min="1" required class="control" /></div></div><div class="activity-settings">
-<label for="activityBaseline">Normal-day active calories already covered by your base goal (kcal)</label>
-<input id="activityBaseline" class="control" type="number" min="0" max="20000" step="10" placeholder="Leave empty to disable exercise credit" />
-<label for="activityCreditPct">Credit for active calories above that baseline (%)</label>
-<input id="activityCreditPct" class="control" type="number" min="0" max="100" step="5" value="70" />
-<p class="small-note">Apple Health's Move calories include both exercise and ordinary movement. Leaving the baseline blank keeps your 2,470 kcal goal unchanged while still showing activity data. Do not add workout calories twice.</p>
-</div><button type="submit" class="secondary">Save targets</button></form></div>
-      <div class="card form-card"><h2>Your data stays yours</h2><p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser storage can be erased if the app or its website data is removed.</p><button class="secondary" id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup file</label><input id="importInput" type="file" accept="application/json,.json" hidden /></div>
-      <div class="card quiet"><h3>About Fuel Lab</h3><p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT. Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you separately record them through ChatGPT.</p><p class="version">FUEL LAB / V0.8 · PERFORMANCE LAB</p></div>
-      <section class="card form-card app-update-card" aria-labelledby="updatesTitle">
-        <div class="eyebrow">APP MAINTENANCE</div><h2 id="updatesTitle">Updates & refresh</h2>
-        <p class="helper">Using Fuel Lab from your Home Screen? Check for the latest version and reload it here, without clearing your food diary or app settings.</p>
-        <button class="primary" type="button" id="checkForUpdates">↻ Check for updates & reload</button>
-        <p class="small-note">Requires internet. Your Google Sheet link stays saved, but you might need to sign in again after reloading.</p>
-        <p class="update-status" id="updateStatus" role="status" aria-live="polite"></p>
+      <div class="offline-pill" id="syncPill"><span class="status-dot"></span> LOCAL DIARY</div>
+    </header>
+    <main>
+      <section class="screen" id="screen-today">
+        <div class="welcome">
+          <div class="eyebrow">TODAY'S FUEL</div>
+          <h1>Build better days.</h1>
+          <p>A simple record of what you eat. Your food, your numbers, your control.</p>
+        </div>
+        <section class="chat-first card" aria-label="Log food in ChatGPT">
+          <div>
+            <div class="eyebrow">CHAT-FIRST LOGGING</div>
+            <h2>Tell ChatGPT what you ate.</h2>
+            <p>Your conversation is the food log interface. Fuel Lab shows the results after Google Sheets syncs.</p>
+          </div><a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer">Open ChatGPT ↗</a>
+        </section>
+        <div class="sync-summary" id="syncSummary" aria-live="polite">Your food diary is saved locally. Connect Google
+          Sheets in Settings for ChatGPT entries.</div>
+        <div class="date-nav"><button class="circle-button" id="prevDate" aria-label="Previous day">‹</button>
+          <div class="date-label" id="dateLabel">Today</div><button class="circle-button" id="nextDate"
+            aria-label="Next day">›</button>
+        </div>
+        <div class="hero card">
+          <div class="cal-ring" id="calRing">
+            <div class="cal-center"><strong id="calConsumed">0</strong><span>of <b id="calTarget">2470</b> kcal</span>
+            </div>
+          </div>
+          <div class="cal-aside">
+            <div class="eyebrow">DAILY BALANCE</div>
+            <div class="remaining" id="calRemaining">2,470</div>
+            <p id="balanceLabel">kcal remaining</p>
+            <div class="tiny">Based on the targets you set. Estimates are not exact measurements.</div>
+          </div>
+        </div>
+        <div class="macro-grid" id="macroGrid"></div>
+
+        <section class="card health-card" aria-labelledby="healthTitle">
+          <div class="health-head">
+            <div>
+              <div class="eyebrow">APPLE HEALTH</div>
+              <h2 id="healthTitle">Today's activity</h2>
+            </div><span id="activitySource" class="health-source">Awaiting Shortcut</span>
+          </div>
+          <div class="health-numbers">
+            <div><small>Move / active energy</small><strong id="activityKcal">—</strong></div>
+            <div><small>Exercise minutes</small><strong id="activityMinutes">—</strong></div>
+            <div><small>Calorie target adjustment</small><strong id="activityCredit">Not configured</strong></div>
+          </div>
+          <p class="health-note" id="activityNote">Active calories include workouts and everyday movement, so they are
+            not automatically added to your base target.</p>
+        </section>
+        <div class="section-title">
+          <h2>Your food diary</h2><span id="entryCount">0 entries</span>
+        </div>
+        <div id="mealGroups"></div>
+        <p class="disclaimer">Numbers are estimates. Oils, sauces, serving sizes and preparation methods can change the
+          actual nutrition.</p>
       </section>
-    </section>
-  </main>
-  <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today" class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log food</button><button data-screen="progress"><span>↗</span>Progress</button><button data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button></nav>
-  <div id="toast" role="status" aria-live="polite"></div>
-</div>
-<script src="food-core.js"></script><script src="progress.js"></script><script src="app.js"></script><script src="https://accounts.google.com/gsi/client" async defer></script><script src="sync.js"></script>
-</body></html>
+      <section class="screen hidden" id="screen-add">
+        <div class="eyebrow">QUICK ENTRY</div>
+        <h1>Tell me what you ate.</h1>
+        <p class="helper">Try “3 eggs and a bagel” or “150g cooked chicken breast”. This first version uses an offline
+          food matcher, not an AI model. You review everything before saving.</p>
+        <div class="card form-card"><label for="quickText">Describe your meal</label><textarea id="quickText" rows="4"
+            placeholder="3 eggs and 1 bagel"></textarea>
+          <div class="flex"><label class="inline-label" for="quickMeal">Meal</label><select id="quickMeal"
+              class="control">
+              <option>Breakfast</option>
+              <option>Lunch</option>
+              <option>Dinner</option>
+              <option>Snacks</option>
+            </select></div><button class="primary" id="parseBtn">Review food matches →</button>
+        </div>
+        <div id="parseResults"></div>
+        <div class="section-title">
+          <h2>Or choose a saved food</h2>
+        </div>
+        <div class="card form-card"><label for="foodPicker">Food</label><select id="foodPicker"
+            class="control"></select>
+          <div class="flex">
+            <div><label for="foodQty">Servings</label><input id="foodQty" class="control" type="number" min="0.1"
+                max="1000" step="0.1" value="1" /></div>
+            <div><label for="pickerMeal">Meal</label><select id="pickerMeal" class="control">
+                <option>Breakfast</option>
+                <option>Lunch</option>
+                <option>Dinner</option>
+                <option>Snacks</option>
+              </select></div>
+          </div>
+          <div id="pickerNutrition" class="small-note"></div><button class="secondary" id="addSelected">Add food to
+            diary</button>
+        </div>
+      </section>
+      <section class="screen hidden" id="screen-foods">
+        <div class="eyebrow">PERSONAL LIBRARY</div>
+        <h1>Your saved foods.</h1>
+        <p class="helper">The starter foods use illustrative nutrition estimates. Replace them with exact label values
+          when available.</p>
+        <div class="card form-card">
+          <h2>Save a food</h2>
+          <form id="foodForm"><label for="newName">Name</label><input class="control" id="newName" required
+              maxlength="90" placeholder="My chicken wrap" /><label for="newPortion">Serving unit</label><input
+              class="control" id="newPortion" required maxlength="50" placeholder="wrap / 100 g / bowl" />
+            <div class="two-col">
+              <div><label for="newKcal">Calories</label><input class="control" id="newKcal" type="number" required
+                  min="0" step="0.1" /></div>
+              <div><label for="newProtein">Protein (g)</label><input class="control" id="newProtein" type="number"
+                  required min="0" step="0.1" /></div>
+              <div><label for="newCarbs">Carbs (g)</label><input class="control" id="newCarbs" type="number" required
+                  min="0" step="0.1" /></div>
+              <div><label for="newFat">Fat (g)</label><input class="control" id="newFat" type="number" required min="0"
+                  step="0.1" /></div>
+            </div><button type="submit" class="primary">Save to food library</button>
+          </form>
+        </div>
+        <div class="section-title">
+          <h2>Food library</h2><span id="foodCount"></span>
+        </div>
+        <div id="foodList"></div>
+      </section>
+      <section class="screen hidden" id="screen-progress">
+        <div id="progressContent" aria-live="polite"></div>
+      </section>
+      <section class="screen hidden" id="screen-settings">
+        <div class="eyebrow">YOUR CONTROL PANEL</div>
+        <h1>Settings & backup.</h1>
+        <p class="helper">Your diary remains saved on this device. With your approval, Fuel Lab reads meals that ChatGPT
+          has logged to your private Google Sheet.</p>
+        <section class="card form-card appearance-card">
+          <div class="eyebrow">MAKE IT YOURS</div>
+          <h2>Appearance</h2>
+          <p class="helper">Cloud Blue is the new light look. You can switch back to the original dark style at any
+            time, without affecting your diary.</p><label for="themeSelect">Colour theme</label><select class="control"
+            id="themeSelect">
+            <option value="light">Cloud Blue · Light</option>
+            <option value="dark">Classic Dark · Original</option>
+          </select>
+          <div class="theme-preview" aria-hidden="true"><span class="swatch-blue"></span><span
+              class="swatch-ice"></span><span class="swatch-navy"></span></div>
+          <p class="small-note">Appearance is saved on this device only.</p>
+        </section>
+        <div class="card form-card sync-card" id="syncSettings">
+          <div class="eyebrow">PRIVATE GOOGLE SHEETS</div>
+          <h2>ChatGPT → Fuel Lab</h2>
+          <p class="helper">Tell ChatGPT what you ate. It updates your private spreadsheet, and Fuel Lab imports those
+            entries on return to the app. Local entries are never uploaded.</p>
+          <label for="syncSheetId">Your private Google Sheets link</label>
+          <input class="control" id="syncSheetId" autocomplete="off" spellcheck="false"
+            placeholder="Paste the private Fuel Lab sheet link" />
+          <div class="training-link-box"><label for="trainingSheetId">Swim & Strength tracker (optional)</label>
+            <input class="control" id="trainingSheetId" autocomplete="off" spellcheck="false"
+              placeholder="Paste the separate training spreadsheet link" />
+            <p class="small-note">Uses the same read-only Google sign-in. Your tracker stays private; Fuel Lab only
+              displays recorded sessions.</p>
+            <div class="training-sync-status" id="trainingStatus" aria-live="polite">Not connected. Your existing
+              training sheet is unchanged.</div>
+          </div>
+          <div class="sync-actions">
+            <button type="button" class="primary" id="syncConnect">Connect Google</button>
+            <button type="button" class="secondary" id="syncNow">Refresh now</button>
+            <button type="button" class="secondary" id="syncDisconnect">Disconnect</button>
+          </div>
+          <div class="sync-state" id="syncStatus" aria-live="polite">Not connected. Your existing diary is safe.</div>
+          <p class="small-note">Automatic on return, when internet reconnects and every two minutes while open—as long
+            as Google sign-in is still active. You may occasionally need to reconnect after a token expires. This app
+            cannot sync while fully closed on iPhone.</p>
+          <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" class="sync-chat-link">Open ChatGPT to
+            log a meal ↗</a>
+        </div>
+        <div class="card form-card">
+          <h2>Daily targets & activity credit</h2>
+          <form id="settingsForm">
+            <div class="two-col">
+              <div><label for="targetKcal">Calories</label><input id="targetKcal" type="number" min="1" required
+                  class="control" /></div>
+              <div><label for="targetProtein">Protein (g)</label><input id="targetProtein" type="number" min="1"
+                  required class="control" /></div>
+              <div><label for="targetCarbs">Carbs (g)</label><input id="targetCarbs" type="number" min="1" required
+                  class="control" /></div>
+              <div><label for="targetFat">Fat (g)</label><input id="targetFat" type="number" min="1" required
+                  class="control" /></div>
+            </div>
+            <div class="activity-settings">
+              <label for="activityBaseline">Normal-day active calories already covered by your base goal (kcal)</label>
+              <input id="activityBaseline" class="control" type="number" min="0" max="20000" step="10"
+                placeholder="Leave empty to disable exercise credit" />
+              <label for="activityCreditPct">Credit for active calories above that baseline (%)</label>
+              <input id="activityCreditPct" class="control" type="number" min="0" max="100" step="5" value="70" />
+              <p class="small-note">Apple Health's Move calories include both exercise and ordinary movement. Leaving
+                the baseline blank keeps your 2,470 kcal goal unchanged while still showing activity data. Do not add
+                workout calories twice.</p>
+            </div><button type="submit" class="secondary">Save targets</button>
+          </form>
+        </div>
+        <div class="card form-card">
+          <h2>Your data stays yours</h2>
+          <p class="helper">Export a JSON backup regularly and save it to Files → iCloud Drive. Data stored in browser
+            storage can be erased if the app or its website data is removed.</p><button class="secondary"
+            id="exportBtn">↓ Export backup</button><label for="importInput" class="import-label">↑ Restore from backup
+            file</label><input id="importInput" type="file" accept="application/json,.json" hidden />
+        </div>
+        <div class="card quiet">
+          <h3>About Fuel Lab</h3>
+          <p>Local quick logging is a simple offline matcher. Conversational AI food estimates happen here in ChatGPT.
+            Google Sheets sync is read-only: entries added directly in Fuel Lab remain on your device until you
+            separately record them through ChatGPT.</p>
+          <p class="version">FUEL LAB / V0.8 · PERFORMANCE LAB</p>
+        </div>
+        <section class="card form-card app-update-card" aria-labelledby="updatesTitle">
+          <div class="eyebrow">APP MAINTENANCE</div>
+          <h2 id="updatesTitle">Updates & refresh</h2>
+          <p class="helper">Using Fuel Lab from your Home Screen? Check for the latest version and reload it here,
+            without clearing your food diary or app settings.</p>
+          <button class="primary" type="button" id="checkForUpdates">↻ Check for updates & reload</button>
+          <p class="small-note">Requires internet. Your Google Sheet link stays saved, but you might need to sign in
+            again after reloading.</p>
+          <p class="update-status" id="updateStatus" role="status" aria-live="polite"></p>
+        </section>
+      </section>
+    </main>
+    <nav class="bottom-nav" aria-label="Main navigation"><button data-screen="today"
+        class="active"><span>◉</span>Diary</button><button data-screen="add" class="add-tab"><span>＋</span>Log
+        food</button><button data-screen="progress"><span>↗</span>Progress</button><button
+        data-screen="foods"><span>▤</span>Foods</button><button data-screen="settings"><span>⚙</span>Settings</button>
+    </nav>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </div>
+  <script src="food-core.js"></script>
+  <script src="progress.js"></script>
+  <script src="app.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="sync.js"></script>
+</body>
+
+</html>
